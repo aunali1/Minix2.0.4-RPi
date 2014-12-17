@@ -1,0 +1,86 @@
+.TH DOSD 4
+.SH NAME
+dosd \- DOS file as a virtual disk
+.SH DESCRIPTION
+The
+.B dosd*
+devices allow one to use a DOS file as a disk.  If for instance the
+Boot Environment contains one of these pairs of settings:
+.PP
+.RS
+.nf
+.BR dosd " = " file
+.BR dosd0 " = " \eminix\edisk0.mnx
+.sp 0.4v
+.BR dosd " = " fat
+.BR dosd0 " = " hd1:\eminix\edisk0.mnx
+.fi
+.RE
+.PP
+Then the device
+.B /dev/dosd0
+addresses all the blocks in the DOS file
+.BR \eminix\edisk0.mnx .
+.PP
+The "file" and "FAT" versions of the driver differ radically on how they
+access the DOS file, the first will use actual DOS calls to read and
+write the file, the second interprets a FAT file system to find the blocks
+of the file.  One understands that the "file" driver can only run if Minix
+has been started from DOS using the DOS version of the Boot Monitor.
+Note that the DOS Boot Monitor will also set
+.B dosd0
+automatically to the file it is to boot, so no configuration is necessary.
+.PP
+In either case the DOS file is seen as a disk under Minix.  The disk can
+have one primary partition table allowing one to create the partitions
+.B dosd1
+through
+.BR dosd4 .
+.PP
+One more virtual disk may be created for the FAT driver by setting the
+.B dosd5
+variable to enable the devices
+.BR dosd[5-9] .
+The file driver also supports
+.B dosd10
+and
+.B dosd15
+for four virtual disks total.
+The FAT driver allows one to use any primary partition on a normal hard disk
+or even on a floppy drive (for testing purposes).
+.PP
+The FAT driver has less then 20% performance overhead compared with a true
+partition due to the DOS file decoding.  The file driver depends on how well
+DOS does file I/O, which isn't too bad for simple reads and writes to one file.
+Overhead can be minimized if I/O is
+aligned to DOS file clusters.  For Minix file system use you are advised to
+start the virtual partitions on even-numbered disk sectors, so that the
+2-sector Minix blocks do not span clusters.  Minix-vmd swap partitions are
+accessed in units of the page size, i.e. 4096 bytes = 8 sectors.  To minimize
+overhead you could let partitions start on a cluster boundary.  The
+virtual disk will appear to have a track size equal to the cluster size, so
+a partition is cluster aligned if it starts on the first sector in a track.
+It is of course best to also defragment your DOS partition to eliminate any
+extra disk seeks due to gaps between clusters.
+.PP
+Replacing the "file" driver by the "FAT" driver will help performance if the
+normal disk driver used by the FAT driver is a native Minix driver.  The FAT
+driver used together with the BIOS disk driver will not make much of a
+difference.
+.SH FILES
+/dev/dosd[0\-9]
+.SH "SEE ALSO"
+.BR hd (4),
+.BR sd (4).
+.SH BUGS
+The file driver needs calls to read and write arbitrary DOS files to allow
+file to be easily moved between DOS and Minix.
+.PP
+The FAT driver doesn't understand long file names.
+.PP
+More testing is needed on FAT-32 file systems.
+.SH AUTHORS
+.SS "FAT driver"
+Philip Homburg (philip@cs.vu.nl)
+.SS "File driver and manual page"
+Kees J. Bot (kjb@cs.vu.nl)

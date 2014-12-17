@@ -1,0 +1,88 @@
+.TH RARPD 8
+.SH NAME
+rarpd \- reverse address resolution protocol daemon
+.SH SYNOPSIS
+.B rarpd
+.RB [ \-d ]
+.SH DESCRIPTION
+.B Rarpd
+listens on the ethernet for broadcast packets asking for reverse address
+resolution.  These packets are sent by hosts at boot time to find out their
+IP address.
+.B Rarpd
+looks up the six octet ethernet number in the
+.B /etc/ethers
+file finding a host name.  This name is translated to the IP address of the
+host by a DNS lookup.  The IP address is then sent to the host.
+.PP
+Before
+.B rarpd
+can start its service it first finds out what the IP addresses of the
+ethernets are.  It will look through
+.B /etc/ethers
+to map the ethernet addresses to host names.  It then uses
+.B /etc/hosts
+to map the host names to IP addresses.  If this lookup fails then several
+RARP requests are broadcasted in the hope that some RARP server knows the
+addresses.  The IP addresses are eventually set in the same way as
+.BR ifconfig (8).
+(The address is not changed if already set with
+.BR ifconfig .)
+Note that the host names in the ethers and hosts files must match exactly.
+The DNS can not be used yet, so a simple name can't be translated to a fully
+qualified name.
+.PP
+Once the addresses are configured
+.B rarpd
+will figure out the netmasks associated by these addresses.  It will do this
+by repeatedly looking up the netmask corresponding to an interfaces' network
+address: ip-address AND current-netmask.  Once the netmask stops changing
+the network interface is configured with this netmask.  Suppose for example
+that the address for an interface is 172.16.102.65.  The initial netmask for
+this class B address is 255.255.0.0.  So we look up the netmask associated
+with 172.16.0.0 (172.16.102.65 & 255.255.0.0).  This lookup yields
+255.255.255.0, so now look up 172.16.102.0 to find 255.255.255.224.  Lastly
+we look up 172.16.102.64 to find 255.255.255.224 again so we use it to set
+the netmask.
+.PP
+If
+.B rarpd
+determines that the machine has no real ethernet connection then it will
+configure the default network to have IP address
+.BR 10.0.0.1
+with netmask
+.BR 255.0.0.0 .
+.PP
+.B Rarpd
+exits after startup if there are no active ethernets, or if there is no
+ethers file.
+.PP
+.B Warning!
+Sun diskless workstations assume that the first RARP server that answers is
+the host they are to boot from.  For this to work all other Sun RARP servers
+delay their answer if they are not also the requestors boot server.  The
+Minix
+.B rarpd
+does not have this kludge so it will happily engage the Sun boot server to
+see who can answer the client first.  Unless your Minix host can actually
+serve a Sun diskless client, it is better not to list any more hosts in the
+ethers file than necessary.
+.SH OPTIONS
+.TP
+.B \-d
+Turns on debugging messages.  Debugging can also be turned on at runtime by
+sending signal
+.B SIGUSR1
+or turned off with
+.BR SIGUSR2 .
+.SH "SEE ALSO"
+.BR ifconfig (8),
+.BR ethers (5),
+.BR hosts (5),
+.BR netdefault (8),
+.BR boot (8),
+.BR inetd (8),
+.BR irdpd (8),
+.BR nonamed (8).
+.SH AUTHOR
+Kees J. Bot (kjb@cs.vu.nl)

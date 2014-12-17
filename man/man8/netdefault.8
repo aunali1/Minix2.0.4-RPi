@@ -1,0 +1,96 @@
+.TH NETDEFAULT 8
+.SH NAME
+netdefault \- select the default TCP/IP network
+.SH SYNOPSIS
+.B netdefault
+.RB [ \-n ]
+.I sample-device
+.SH DESCRIPTION
+.B Netdefault
+selects the default network to use of one of the four networks a Minix
+system can be connected to.  One can choose between two different ethernet
+networks and two different pseudo IP networks that can be used to make a
+connection over a serial line.
+.PP
+The
+.I sample-device
+is the name of one of the network devices in
+.B /dev
+to use as the default network.  This device and devices for other protocols
+for the same network will be linked to the default device names for the
+network.  The network utilities access the default network through these
+devices, unless a different device is chosen by setting an environment
+variable, or a by a command line switch.
+.PP
+Use the
+.B \-n
+flag to only show what would be done, instead of really doing it.
+.SS "Options and environment to change the default"
+Many TCP/IP programs implement the following options and environment
+variables to change the default devices set by
+.BR netdefault .
+The options are only implemented for low level programs where it makes sense
+to name a network device.  The environment variables are used in all code.
+You can run a process and all its children connected to a different network
+by setting four environment variables.
+.PP
+.BI ETH_DEVICE= device
+.br
+.BI -E " device"
+.RS
+Device to use as raw ethernet device instead of the default /dev/eth.
+.RE
+.PP
+.BI PSIP_DEVICE= device
+.br
+.BI -P " device"
+.RS
+Pseudo IP device to use instead of
+.BR /dev/psip .
+.RE
+.PP
+.BI IP_DEVICE= device
+.br
+.BI -I " device"
+.RS
+IP device to use instead of
+.BR /dev/ip .
+.RE
+.PP
+.BI TCP_DEVICE= device
+.br
+.BI -T " device"
+.RS
+TCP device to use instead of
+.BR /dev/tcp .
+.RE
+.PP
+.BI UDP_DEVICE= device
+.br
+.BI -U " device"
+.RS
+UDP device to use instead of
+.BR /dev/udp .
+.RE
+.SH FILES
+.IP /dev/eth[01] 18n
+First and second raw ethernet.
+.IP /dev/psip[23]
+First and second Pseudo IP network.
+.IP /dev/ip[0123]
+IP devices for two ethernets and two Pseudo IP networks.
+.IP /dev/tcp[0123]
+TCP devices for same four networks.
+.IP /dev/udp[0123]
+UDP devices.
+.IP "/dev/eth, /dev/psip, /dev/ip, /dev/tcp, /dev/udp"
+Devices for the default network, links to the devices above.
+.B /dev/eth
+is only present if ethernet is the default,
+.B /dev/psip
+only for pseudo IP.
+.SH "SEE ALSO"
+.BR ip (4),
+.BR boot (8).
+.SH AUTHOR
+Kees J. Bot (kjb@cs.vu.nl)
