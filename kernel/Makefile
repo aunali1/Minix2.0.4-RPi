@@ -2,11 +2,11 @@
 
 # Directories
 u = /usr
-i = $u/include
+i = ../include
 s = $i/sys
 h = $i/minix
 b = $i/ibm
-l = $u/lib
+l = ../lib
 
 # Programs, flags, etc.
 CC =	exec cc
