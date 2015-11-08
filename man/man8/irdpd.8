@@ -3,7 +3,7 @@
 irdpd \- internet router discovery protocol daemon
 .SH SYNOPSIS
 .B irdpd
-.RB [ \-bsd ]
+.RB [ \-bd ]
 .RB [ \-U
 .IR udp-device ]
 .RB [ \-I
@@ -38,25 +38,11 @@ uses this information to build a routing table.
 .PP
 Every now and then a router advertisement is sent to the local host to give
 it router information build from the RIP packets.
-.PP
-Lastly, if a router solicitation arrives and there is no router around that
-sends advertisements, then
-.B irdpd
-sends an advertisement to the requestor.  Note that this is a direct violation
-of RFC1256, as no host is supposed to sent those adverts.  But alas the world
-is not always perfect, and those adverts make booting hosts find routers
-quickly with this help from their brothers.  (Of course, they will lose the
-router soon if they don't have an
-.B irdpd
-daemon themselves.)
 .SH OPTIONS
 .TP
 .B \-b
 Broadcast advertisements instead of sending them to the local host only.
 This may be used to keep (non-Minix) hosts alive on a net without adverts.
-.TP
-.B \-s
-Be silent, do not send advertisements to hosts that ask for them.
 .TP
 .B \-d
 Debug mode, tell where info is coming from and where it is sent.  Debugging
@@ -70,22 +56,19 @@ Offset used to make the gateway's preferences collected from RIP packets look
 worse than those found in genuine router adverts.  By default
 .BR -1024 .
 .SH "SEE ALSO"
-.BR netdefault (8),
+.BR inet (8),
 .BR boot (8),
+.BR dhcpd (8),
 .BR inetd (8),
-.BR nonamed (8),
-.BR rarpd (8).
+.BR nonamed (8).
 .SH BUGS
+This daemon has gone out of favour thanks to
+.BR dhcpd ,
+that also does router solicitations among other things.
+.PP
 Under standard Minix this daemon can't listen to both IRDP and RIP
 at the same time, so it starts out with IRDP.  It switches over to RIP
 if it can't find a router, or if it threatens to lose its router.  It
 does not switch back.
-.PP
-.B Irdpd
-may help a host that should not be helped, i.e. if it doesn't have an
-.B irdpd
-daemon with RIP collecting trickery.  It will make System Administrators
-pull out their remaining hair trying to find out why a host can access
-outside networks for a some time after boot, but goes blind afterwards.
 .SH AUTHOR
 Kees J. Bot (kjb@cs.vu.nl)

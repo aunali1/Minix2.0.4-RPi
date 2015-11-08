@@ -12,37 +12,38 @@ in a network without name servers.  A simple
 may look like this:
 .PP
 .RS
-.ta +15n +10n
+.ta +15n
 .nf
-127.0.0.1	localhost
 10.0.0.1	flotsam
 10.0.0.2	jetsam
-255.0.0.0	0.0.0.10.in-addr.arpa
 .fi
 .RE
 .PP
-The localhost entry lists a special address that refers to the local host
-itself (a kind of /dev/tty for hosts.)  You should only list it if
-.B nonamed
-needs it!  The next two entries are actual machines.  The last entry
-specifies the netmask of the 10.*.*.* network.  The file may contain
+These two entries give names to two IP addresses.  The file may contain
 comments marked with '#'.
 .PP
-You can have aliases (more hostnames on the same line), but it is not
-recommended, because
-.B nonamed
-can't present them to the system as CNAME records.  An often seen form like
+You can have aliases (more hostnames on the same line) to give a machine
+more than one name, like
+.BR www ,
+if you run a web server on one.
+.PP
+If your PC is Internet connected then you can specify the name server(s)
+to get more information from with %nameserver entries:
 .PP
 .RS
-10.0.0.1	flotsam.cs.vu.nl\0\0flotsam
+.ta +\w'172.16.24.3'u+4m +\w'%nameserver'u+4m
+.nf
+172.16.24.3	%nameserver	# dns1.example.com
+172.16.24.6	%nameserver	# dns2.example.com
+.fi
 .RE
 .PP
-is harmless though, and has the small advantage that you can use the short
-name in
-.B /etc/ethers
-so
-.B rarpd
-can match it at boot time.
+Read
+.BR nonamed (8)
+for all the details on special host file entries that configure
+.B nonamed
+for use on the Internet, and on home machines that are occasionally
+connected to the Internet.
 .SH FILES
 .TP 15n
 /etc/hosts
@@ -50,7 +51,7 @@ Hosts database.
 .SH "SEE ALSO"
 .BR ethers (5),
 .BR nonamed (8),
-.BR rarpd (8),
+.BR dhcpd (8),
 .BR boot (8).
 .SH AUTHOR
 Kees J. Bot (kjb@cs.vu.nl)

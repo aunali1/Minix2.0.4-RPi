@@ -9,7 +9,7 @@ can be used to reboot the system after installing a new kernel.  It does
 not inform the users, but does log it's actions in
 .B /usr/adm/wtmp
 and
-.BR /usr/adm/authlog .
+.BR /usr/adm/log .
 The system is then rebooted with the
 .BR reboot (2)
 systemcall.
@@ -27,7 +27,7 @@ logs itself as if it were a shutdown.  This is done to prevent
 .BR last (1)
 from talking about system-crashes.
 .B Reboot
-is registered as is in the authlog file.
+is registered as is in the log file.
 .PP
 .B Reboot
 can only be executed by the super-user.  Any other caller will be

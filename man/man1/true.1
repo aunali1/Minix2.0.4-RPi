@@ -5,25 +5,16 @@ true, false \- exit with the value true or false
 \fBtrue\fR
 .br
 \fBfalse\fR
-.br
-.de FL
-.TP
-\\fB\\$1\\fR
-\\$2
-..
-.de EX
-.TP 20
-\\fB\\$1\\fR
-# \\$2
-..
 .SH EXAMPLES
-.EX "while true" "List the directory until DEL is hit"
+.ta +20n
+.ft B
+.nf
+while true	\fR# List the directory until DEL is hit\fP
+do ls \-l
+done
+.fi
+.ft P
 .SH DESCRIPTION
-.br
-	do ls \-l
-.br
-	done
-.PP
 These commands return the value
 .I true
 or

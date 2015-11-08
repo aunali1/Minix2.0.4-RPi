@@ -2,7 +2,8 @@
 .SH NAME
 date \- print or set the date and time
 .SH SYNOPSIS
-\fBdate [\fB\-qsu\fR] [[\fIMMDDYY\fR]\fIhhmm\fR[\fIss\fR]] [\fI+format\fR]\fR
+\fBdate [\fB\-qsuS\fR] [\fB\-r\fI seconds\fR]
+[[\fIMMDDYY\fR]\fIhhmm\fR[\fIss\fR]] [\fI+format\fR]\fR
 .br
 .de FL
 .TP
@@ -18,7 +19,8 @@ date \- print or set the date and time
 .FL "\-q" "Read the date from \fIstdin\fR"
 .FL "\-s" "Set the time (implicit for \fB\-q\fR or a date string)"
 .FL "\-u" "Print the date as GMT"
-.FL "\-t" "Use this number of seconds instead of current time"
+.FL "\-S" "Date within Eternal September"
+.FL "\-r" "Use this number of seconds instead of current time"
 .SH EXAMPLES
 .EX "date" "Print the date and time"
 .EX "date 0221921610" "Set date to Feb 21, 1992 at 4:10 p.m."

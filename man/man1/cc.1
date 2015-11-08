@@ -45,6 +45,8 @@ cc, pc, m2 \- Minix C, Pascal, and Modula-2 compilers
 .RB [ "\-L \fIdirectory" ]
 \&...
 .RB [ \-i ]
+.RB [ \-sep ]
+.RB [ \-com ]
 .RB [ \-r ]
 .RB [ "\-stack \fIsize" ]
 .I operand
@@ -89,6 +91,8 @@ cc, pc, m2 \- Minix C, Pascal, and Modula-2 compilers
 .RB [ "\-L\fIdirectory" ]
 \&...
 .RB [ \-i ]
+.RB [ \-sep ]
+.RB [ \-com ]
 .I operand
 \&...
 .in -.5i
@@ -106,7 +110,11 @@ driver program.
 .B Acd
 uses the driver description file
 .B /usr/lib/descr
-that describes the steps necessary to compile a source file.
+that describes the steps necessary to compile a source file.  The
+.BR acd (1)
+manual page describes a few more flags, like
+.BR \-v ,
+that may be useful for debugging compiler problems.
 .PP
 Minix-86 uses a C program as the compiler driver.  This driver is not as
 flexible as the one implemented with the
@@ -325,8 +333,11 @@ any
 flag.)
 .TP
 .B \-m
-Ignored.  (Used under Minix-86 to remove unused prototypes from C input to
-to keep the compiler from running out of memory.)
+Under Minix-86 this option transforms the function declarations (prototypes)
+to the old K&R form, i.e. the arguments declarations are removed.  This saves
+a lot of memory in the compiler and may allow a large program to be compiled.
+One must make sure that function arguments are properly type-cast where
+necessary.  (Minix)
 .TP
 .BI \-m arch
 Set the target architecture for a cross compiler.  Normally the compiler
@@ -385,14 +396,23 @@ Minix dependent, compilers on other systems usually only look in
 and
 .B /usr/lib
 as the standard places.)
-.TP
-.B \-i
-Create a Separate I&D executable.  This causes the text segment to be
-read-only and shareable.  For an
+.PP
+.B \-sep
+.br
+.B \-com
+.RS
+Create a Separate I&D or a common I&D executable.  The text segment of a
+separate I&D executable is read-only and shareable.  For an
 .B i86
 binary this also means that the text and data segment can each be 64
-kilobytes large instead of just 64 kilobytes together.
+kilobytes large instead of just 64 kilobytes together.  Separate I&D is the
+default.  Common I&D is probably only useful for the bootstraps.  The
+.B \-i
+option has the same meaning as
+.BR \-sep ,
+but should no longer be used.
 (Minix)
+.RE
 .TP
 .B \-r
 Makes the loader produce a relocatable object file, i.e. a file that

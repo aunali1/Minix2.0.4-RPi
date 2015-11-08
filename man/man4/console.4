@@ -42,11 +42,10 @@ in either monochrome or colour (grayscale) mode depending on how the Boot
 Monitor has initialized it.
 .PP
 The driver uses the video origin to avoid copying the screen contents when
-scrolling up or down.  Instead, the origin is simply moved one line.  This is
+scrolling up or down.  Instead the origin is simply moved one line.  This is
 named "hardware scrolling", as opposed to copying memory: "software
 scrolling".
 .PP
-.\" .ig \" VC - keep around for if virtual consoles become standard.
 The video origin is also used to implement several virtual consoles inside
 the video memory of the adapter.  Each virtual console gets a segment of
 video memory.  The driver chooses which console to display by moving the
@@ -55,7 +54,6 @@ console.  CGA can support up to four 80x25 consoles, and EGA and VGA can
 have eight.  It is best to configure one less console to leave some video
 memory free so that hardware scrolling has some space to work in.
 .PP
-.\" ..
 Character codes are used as indices into a display font that is stored in the
 adapter.  The default font is the IBM character set, which is an ASCII
 character set in the low 128 codes, and a number of mathematical, greek,
@@ -190,8 +188,13 @@ font memory on EGA and VGA adapters:
 Font memory consists of 256 character definitions of 32 lines per character
 and 8 pixels per line.  The first line is the topmost line of the character.
 The leftmost pixel is lit if the most significant bit of a line is set, etc.
-The 80x25 video mode used by Minix has an 8x16 character cell, which means
-that only the first 16 lines of a character are displayed.
+How many lines are used depends on the current video mode.  The 80x25 video
+mode used by Minix has an 8x16 character cell, 80x28 has 8x14 characters,
+and 132x43 or 132x50 has 8x8 characters.  The boot variable
+.B console
+is used by both the Boot Monitor and the console driver to set the video
+mode, software scrolling on/off, and VGA screen blank timeout.  See
+.BR boot (8).
 .SS "The Keyboard"
 The keyboard produces key codes for each key that is pressed.  These keys
 are transformed into character codes or sequences according to the current

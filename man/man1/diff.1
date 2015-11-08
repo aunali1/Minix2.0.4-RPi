@@ -19,17 +19,15 @@ diff \- print differences between two files
 .FL "\-b" "Ignore white space when comparing"
 .FL "\-c" "Produce output that contains three lines of context"
 .FL "\-e" "Produce an \fIed\fR-script to convert \fIfile1\fR into \fIfile2\fR"
-.FL "\-r" "Apply \fIdiff\fR recursively to files and directories of
+.FL "\-r" "Apply \fIdiff\fR recursively to files and directories of the same name, when \fIfile1\fR and \fIfile2\fR are both directories"
 .SH EXAMPLES
 .EX "diff file1 file2" "Print differences between 2 files"
 .EX "diff -C 0 file1 file2" "Same as above"
-.EX "diff -C 3 file1 file2" "Output three lines of context with every
+.EX "diff -C 3 file1 file2" "Output three lines of context with every difference encountered"
 .EX "diff -c file1 file2" Same as above"
 .EX "diff /etc /dev" "Compares recursively the directories \fI/etc\fR and \fI/dev\fR"
 .EX "diff passwd /etc" "Compares \fI./passwd\fR to \fI/etc/passwd"
 .SH DESCRIPTION
-the same name, when \fIfile1\fR and \fIfile2\fR are both directories"
-difference encountered"
 .PP
 \fIDiff\fR compares two files and generates a list of lines telling how
 the two files differ.  Lines may not be longer than 128 characters.

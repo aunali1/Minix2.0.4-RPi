@@ -28,7 +28,14 @@ IP device, and reads packets from the pseudo IP device and writes them to
 standard output.  A typical use is like this:
 .PP
 .RS
-.B "slip /dev/psip2 </dev/tty01 >/dev/tty01"
+.nf
+.ft B
+{
+	stty raw 115200
+	slip /dev/psip2 &
+} </dev/tty01 >/dev/tty01
+.ft P
+.fi
 .RE
 .PP
 The SLIP protocol is just a very simple packet framing protocol.  It defines
@@ -47,20 +54,23 @@ An ESC character (octal 333) is used to escape any END or ESC characters
 that may occur in an IP packet.  END and ESC are changed to ESC 334 and ESC
 335 in the data stream.  (Note that END doesn't occur within the data stream
 at all by escaping it this way, making finding the framing END easier.)
+.ig
 .PP
 The manual page
 .BR serial-ip (8)
 describes how to configure the Minix network devices to be used with a
 serial IP connection.
+..
 .SH FILES
 .TP \w'/dev/psip*'u+5n
 .B /dev/psip*
 Pseudo-IP devices for use by
 .BR slip .
 .SH "SEE ALSO"
-.BR ppp (8),
-.BR serial-ip (8).
+.ig
+.BR ppp (8).
 .br
+..
 .BR RFC-1055 .
 .SH NOTES
 Under Minix
@@ -69,4 +79,4 @@ forks in two to handle the two data streams in or out of the serial line.
 Under Minix-vmd it uses asynchronous I/O to handle the two streams within
 one program.
 .SH AUTHOR
-Kees J. Bot (kjb@cs.vu.nl)
+Kees J. Bot <kjb@cs.vu.nl>

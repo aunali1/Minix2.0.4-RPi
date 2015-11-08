@@ -10,10 +10,13 @@ Created:	March 15, 1994 by Philip Homburg <philip@cs.vu.nl>
 #include "kernel.h"
 #include <net/gen/ether.h>
 #include <net/gen/eth_io.h>
+#if __minix_vmd
+#include "config.h"
+#endif
 #include "dp8390.h"
 #include "ne2000.h"
 
-#if (ENABLE_NETWORKING && ENABLE_NE2000) || __minix_vmd
+#if ENABLE_DP8390 && ENABLE_NE2000
 
 #define N 100
 
@@ -68,7 +71,7 @@ dpeth_t *dep;
 			return 0;
 		}
 
-		/* Put it in loop-back mode */
+		/* Disable the receiver and init TCR and DCR. */
 		outb_reg0(dep, DP_RCR, RCR_MON);
 		outb_reg0(dep, DP_TCR, TCR_NORMAL);
 		if (dep->de_16bit)
@@ -313,8 +316,8 @@ dpeth_t *dep;
 	outb_ne(dep, NE_RESET, byte);
 }
 
-#endif /* ENABLE_NETWORKING && ENABLE_NE2000 */
+#endif /* ENABLE_DP8390 && ENABLE_NE2000 */
 
 /*
- * $PchId: ne2000.c,v 1.4 1996/01/19 23:30:34 philip Exp $
+ * $PchId: ne2000.c,v 1.7 2000/08/12 11:12:09 philip Exp $
  */

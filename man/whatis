@@ -5,10 +5,11 @@ ctags (1) - Generates "tags" and (optionally) "refs" files
 cc, pc, m2 (1) - Minix C, Pascal, and Modula-2 compilers
 elvrec (1) - Recover the modified version of a file after a crash
 elvis, ex, vi (1) - The editor
+crontab (1) - User crontab manipulation
 bsfilt, colcrt (1) - a colcrt-like backspace filter
 acd (1) - a compiler driver
 make (1) - a program for maintaining large programs
-ash, command, getopts, hash, jobs, local, return, setvar, unset (1) - a shell
+ash, sh, ., break, case, cd, command, continue, eval, exec, exit, export, for, getopts, hash, if, jobs, local, read, readonly, return, set, setvar, shift, trap, umask, unset, wait, while (1) - a shell
 fmt (1) - adjust line-length for paragraphs of text
 yacc (1) - an LALR(1) parser generator
 yes (1) - an endless stream of the same word
@@ -19,7 +20,7 @@ passwd, chfn, chsh (1) - change a login password, full name or shell
 chmod (1) - change access mode for files
 chgrp (1) - change group
 chmem (1) - change memory allocation
-clr (1) - clear the screen
+clear, clr (1) - clear the screen
 cmp (1) - compare two files
 compress, uncompress, zcat (1) - compress a file using modified Lempel-Ziv coding
 sum (1) - compute the checksum and block count of a file
@@ -27,15 +28,15 @@ cat (1) - concatenate files and write them to stdout
 xargs (1) - construct argument list(s) and execute utility.
 cdiff (1) - context diff
 M, U (1) - conveniently mount and unmount
+dd (1) - convert and copy a file
 unexpand (1) - convert spaces to tabs
 expand (1) - convert tabs to spaces
 lp, lpd (1) - copy a file to the line printer
+cp, mv, rm, ln, cpdir, clone (1) - copy, move, remove, link
 wc (1) - count characters, words, and lines in a file
 mkproto (1) - create a MINIX prototype file
-ln, clone (1) - create a link to a file
 uud, uudecode (1) - decode a binary file encoded with uue
 uniq (1) - delete consecutive identical lines in a file
-dd (1) - disk dumper
 cksum (1) - display file checksum and size
 man (1) - display online manual pages
 last, uptime (1) - display recent on-line session records, show uptime
@@ -43,15 +44,14 @@ tee (1) - divert stdin to a file
 ed (1) - editor
 eject (1) - eject removable media
 uue, uuencode (1) - encode a binary file to ASCII (e.g., for mailing)
-expr (1) - evaluate experession
+expr, test, [ (1) - evaluate expressions
 which (1) - examine $PATH to see which file will be executed
 whereis (1) - examine system directories for a given file
-at, atrun (1) - execute commands at a later time
+at (1) - execute commands at a later time
 true, false (1) - exit with the value true or false
 factor (1) - factor an integer less than 2**31
 flexdoc (1) - fast lexical analyzer generator
 flex, lex (1) - fast lexical analyzer generator
-cp, cpdir (1) - file copy
 find (1) - find files meeting a given condition
 look (1) - find lines in a sorted list
 fgrep (1) - fixed grep
@@ -77,14 +77,13 @@ file (1) - make a guess as to a file's type based on contents
 mkfifo (1) - make a named pipe
 mixer (1) - manipulate mixer settings on a sound card
 mount (1) - mount a file system
-mv (1) - move or rename a file
+rget, rput (1) - network pipe
 od (1) - octal dump
 paste (1) - paste multiple files together
 fsck, fsck1 (1) - perform file system consistency check
 postmort (1) - perform post-mortem on PC Minix core files
 mesg (1) - permit or deny messages
 playwave (1) - play an audio file in MicroSoft PCM wave format
-cdplay (1) - play audio compact disks
 prep (1) - prepare a text file for statistical analysis
 banner (1) - print a banner
 cal (1) - print a calendar
@@ -101,7 +100,6 @@ nm (1) - print name list
 anm (1) - print name list
 date (1) - print or set the date and time
 size (1) - print text, data, and bss size of a program
-echo (1) - print the arguments
 crc (1) - print the checksum of the file data
 termcap (1) - print the current termcap entry
 tty (1) - print the device name of this tty
@@ -110,6 +108,8 @@ tail (1) - print the last few lines of a file
 id (1) - print the uid and gid
 pwd (1) - print working directory
 ps (1) - process status
+echo (1) - produce message in a shell script
+stat, lstat (1) - provide a shell interface to the stat(2) system call
 readfs (1) - read a MINIX file system
 readall (1) - read a device quickly to check for bad blocks
 dosread (1) - read a file from an MS-DOS diskette [IBM]
@@ -124,11 +124,11 @@ rsh (1) - remote shell
 remsync (1) - remotely synchronize file trees
 ifdef (1) - remove #ifdefs from a file
 rmdir (1) - remove a directory
-rm (1) - remove a file
 strip (1) - remove symbol table from executable file
 time (1) - report how long a command takes
-df (1) - report on free disk space and i-nodes
+df (1) - report on free disk space
 asize (1) - report the size of an object file
+sysenv (1) - request system boot parameter
 grep (1) - search a file for lines containing a given pattern
 cut (1) - select out columns of a file
 sz (1) - send a file using the zmodem protocol
@@ -137,14 +137,12 @@ kill (1) - send a signal to a process
 mail (1) - send and receive electronic mail
 env (1) - set environment for command
 stty (1) - set terminal parameters
-sh, ., break, case, cd, continue, eval, exec, exit, export, for, if, read, readonly, set, shift, trap, umask, wait, while (1) - shell
 shar (1) - shell archiver
 svc, ci, co, svclog (1) - shell version control system
 hostaddr (1) - show ethernet address, IP address or hostname
 sort (1) - sort a file of ASCII lines
 split (1) - split a large file into several smaller files
 vol (1) - split input on or combine output from several volumes
-sed (1) - stream editor
 basename, dirname (1) - strip off file prefixes and suffixes
 sleep (1) - suspend execution for a given number of seconds
 modem (1) - switch the modem and getty state
@@ -152,8 +150,7 @@ synctree (1) - synchronize directory trees.
 uname, arch (1) - system info
 tar (1) - tape archiver
 su (1) - temporarily log in as superuser or another user
-test, [ (1) - test for a condition
-ttt (1) - tic tac toe
+sed (1) - the stream editor
 tsort (1) - topological sort [IBM]
 tr (1) - translate character codes
 term (1) - turn PC into a dumb terminal [IBM]
@@ -207,12 +204,15 @@ kill (2) - send signal to a process
 umask (2) - set file creation mode mask
 utime (2) - set file times
 setuid, setgid (2) - set user or group ID's
+svrctl (2) - special server control functions
 pause (2) - stop until signal
 sigsuspend (2) - suspend until signalled
 exit, _exit (2) - terminate a process
 sync (2) - update super-block
 wait, waitpid (2) - wait for process to terminate
 write (2) - write output
+int64, add64, add64u, add64ul, sub64, sub64u, sub64ul, diff64, cvu64, cvul64, cv64u, cv64ul, div64u, rem64u, mul64u, cmp64, cmp64u, cmp64ul, ex64lo, ex64hi, make64 (3) - 64 bit disk offset computations
+servxcheck (3) - Internet service access check
 oneC_sum (3) - One's complement internet checksum
 setbuf, setvbuf (3) - assign buffering to a stream
 random, srandom, initstate, setstate (3) - better random number generator; routines for changing generators
@@ -230,12 +230,14 @@ ttyname (3) - file descriptor to terminal device name
 scanf, fscanf, sscanf, vscanf, vfscanf, vsscanf (3) - formatted input conversion
 printf, fprintf, sprintf, snprintf, vprintf, vfprintf, vsprintf, vsnprintf (3) - formatted output conversion
 abort (3) - generate a fault
+configfile, config_read, config_delete, config_renewed, config_length, config_issub, config_isatom, config_isstring (3) - generic configuration file functions
 gets, fgets (3) - get a string from a stream
 getc, getchar, fgetc, getw (3) - get character or word from stream
 getcwd (3) - get current working directory pathname
 getlogin (3) - get login name
 g_h_b_n, gethostbyname, gethostbyaddr, gethostent, sethostent, endhostent, herror (3) - get network host entry
 getopt (3) - get option letter from argv
+getservent, getservbyport, getservbyname, setservent, endservent (3) - get service entry
 getgrent, getgrnam, getgrgid, setgrent, endgrent, setgrfile (3) - group file routines
 hton, htons, htonl, ntohs, ntohl (3) - host to network byte order conversion
 popen, pclose (3) - initiate I/O to/from a process
@@ -255,8 +257,10 @@ putc, putchar, fputc, putw (3) - put character or word on a stream
 qsort (3) - quicker sort
 rand, srand (3) - random number generator
 getpass (3) - read a password
+regex, regcomp, regexec, regerror, regfree (3) - regular-expression library
 fseek, ftell, rewind (3) - reposition a stream
 resolver, res_query, res_search, res_mkquery, res_send, res_init, dn_comp, dn_expand (3) - resolver routines
+rcmd, rresvport, ruserok (3) - routines for returning a stream to a remote command
 curses (3) - screen/window management library
 stdio (3) - standard buffered input/output package
 ferror, feof, clearerr, fileno (3) - stream status inquiries
@@ -268,38 +272,42 @@ ttyslot, fttyslot (3) - utmp slot number
 getenv (3) - value for environment name
 stdarg (3) - variable argument list
 ip, eth, psip, udp, tcp (4) - Internet Protocol server devices and definitions
-dosd (4) - MS-DOS file as a virtual disk
-sd, st, sg (4) - SCSI hard disk / tape / generic
+controller, disk, tape, at, bios, esdi, aha1540, ncr810, dosfile, fatfile (4) - controllers, disks and tapes
 dev (4) - device files in /dev
 fd (4) - floppy disk
 lp (4) - line printer
 mtio (4) - magnetic tape commands
 console, keyboard, log (4) - system console
 tty, termios (4) - terminals
-hd (4) - winchester hard disk
 resolv.conf (5) - Domain Name System resolver configuration
+serv.access (5) - Internet service access list
 TZ (5) - Time zone environment variable
 whatis (5) - database of online manual pages
 dir (5) - directory layout
+dhcp.conf (5) - dynamic host configuration protocol configuration
 ethers (5) - ethernet address to hostname database
+configfile (5) - generic configuration file format
 hosts (5) - hostname to IP address database
 keymap (5) - keyboard maps
 fstab, mtab (5) - list of file systems to mount, mounted file system table.
 utmp, wtmp (5) - logged in users, login and logout history
 resolver (5) - resolver configuration file
+crontab (5) - table of jobs to be performed by cron
 ttytab (5) - table of login terminals
 termcap (5) - terminal capability data base
 rhosts, hosts.equiv (5) - trusted remote users or hosts
 passwd, group, shadow (5) - user and group databases, shadow passwords
 advent, adventure (6) - an exploration game
+ttt (6) - tic tac toe
 ACK (7) - Additional information on the Amsterdam Compiler Kit compilers
+re_format (7) - POSIX 1003.2 regular expressions
 hier (7) - file system hierarchy
 man (7) - nroff macro package for manual pages
 ascii (7) - the ASCII character set.
 environ (7) - user environment
 ftpd, in.ftpd, setup.anonftp (8) - DARPA Internet File Transfer Protocol server
 elvprsv (8) - Preserve the the modified version of a file after a crash.
-dosminix (8) - Running Minix under DOS
+dosminix, mkfile (8) - Running Minix under DOS
 serial-ip (8) - Serial IP (SLIP or PPP) setup
 slip (8) - Serial Line IP
 inet (8) - TCP/IP server
@@ -308,12 +316,14 @@ adduser (8) - add a new user to the system
 backup (8) - backup files
 chown (8) - change owner
 checkhier (8) - check the directory hierarchy
+cleantmp (8) - clean out a tmp dir
 cron (8) - clock daemon
 srccrc (8) - compute CRC checksums of the entire source tree
 add_route (8) - configure IP routing.
 ifconfig (8) - configure a TCP/IP device
 config (8) - configuring Minix tasks and servers
 mknod (8) - create a special file
+dhcpd (8) - dynamic host configuration protocol daemon
 sync (8) - flush the cache to disk
 boot (8) - from power on to the login prompt
 shutdown (8) - graciously close the system down
@@ -333,13 +343,14 @@ pwdauth (8) - password authentication program
 update (8) - periodically write the buffer cache to disk
 printroot (8) - print the name of the root device on standard output
 badblocks (8) - put a list of bad blocks in a file
-readclock (8) - read the real time clock [IBM PC/AT and AMIGA]
+readclock (8) - read the AT's real time clock
 reboot (8) - reboot the system immediately
 rlogind, in.rld (8) - remote login server
 rshd (8) - remote shell server
 fingerd, in.fingerd (8) - remote user information server
 rarpd (8) - reverse address resolution protocol daemon
-netdefault (8) - select the default TCP/IP network
+intr (8) - run a command with interrupts enabled
+rdate (8) - set time and date from a remote host
 pr_routes (8) - show IP routing.
 getty (8) - system login banner
 screendump (8) - write current console screen to standard output

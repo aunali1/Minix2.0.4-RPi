@@ -21,8 +21,8 @@ installboot \- make a device bootable
 \&...
 .br
 .B installboot \-m(aster)
-.RI [ fix ]
 .I device masterboot
+.RI [ keys " [" logical ]]
 .SH DESCRIPTION
 .de SP
 .if t .sp 0.4
@@ -39,7 +39,8 @@ from the first floppy disk or from the first hard disk into memory and execute
 it.  The code obtained from the hard disk (from the so-called master boot
 sector) will immediately replace itself by the code found in the first sector
 of the active partition.  Thus the PC is now executing the bootstrap code found
-in the first sector of /dev/fd0, /dev/hd1, /dev/hd2, /dev/hd3, or /dev/hd4.
+in the first sector of /dev/fd0, /dev/c0d0p0, /dev/c0d0p1, /dev/c0d0p2, or
+/dev/c0d0p3 (assuming the boot disk is attached to controller 0.)
 The bootstrap will locate the operating system on the device it itself was
 loaded from, load it, and execute it.
 .PP
@@ -59,12 +60,12 @@ installboot \-d /dev/fd0 /usr/mdec/bootblock boot
 .ft P
 .RE
 .PP
-The "boot" program in the example is named the "boot monitor".  It is loaded
+The "boot" program in the example is named the "Boot Monitor".  It is loaded
 by the bootblock code placed in the boot sector of /dev/fd0 and it will take
 care of loading the kernel image "minix" from the root directory of the
 file system.  See
 .BR monitor (8)
-for a description of the boot monitor.  Note that
+for a description of the Boot Monitor.  Note that
 .B boot
 is a name in the file system on
 .B /dev/fd0
@@ -90,7 +91,7 @@ Only the names and a few zero bytes are inserted into the image.  The name
 is for identification and the zeros are used to pad separate pieces to
 sector boundaries for fast loading.
 .SP
-An executable may be prefixed by a label.  The monitor may be instructed to
+An executable may be prefixed by a label.  The Monitor may be instructed to
 load processes by label.  So more than one kernel process may be included in
 the image, each with a different winchester driver for instance.  So if you
 have compiled two different kernels with an AT or XT driver then
@@ -155,9 +156,9 @@ Old boot parameters are kept if there are no images added.
 This option fills a blank floppy in
 .I device
 with boot code and kernel images.  This "boot disk" does not have a root
-file system, only the boot monitor and Minix kernels.  The boot parameters
+file system, only the Boot Monitor and Minix kernels.  The boot parameters
 sector is filled with code that enables menu options for selecting an
-image.  After loading an image, the monitor will ask you to insert a root
+image.  After loading an image, the Monitor will ask you to insert a root
 file system diskette before starting Minix.
 .SP
 The labels used on the images should match those on the executables used
@@ -185,8 +186,8 @@ at the end of the device.  Somewhat confusing.
 .RE
 .PP
 .B \-m(aster)
-.RI [ fix ]
 .I device masterboot
+.RI [ keys " [" logical ]]
 .RS
 This option installs the
 .I masterboot
@@ -198,53 +199,82 @@ then its bootstrap code is copied to
 The master bootstrap on a hard disk boots the active partition on that disk
 at boot time.  The MS-DOS fdisk command normally puts a master bootstrap on
 the hard disk.  Minix has two bootstraps that can be used as a master
-bootstrap.  A fairly normal one named
+bootstrap,
 .B masterboot
-that works as follows:
+and
+.BR jumpboot.
+.SP
+.B Masterboot
+is a fairly normal master bootstrap that works as follows:
 .RS
 .SP
-If the ALT key is held down while booting then '/dev/hd?' appears and you
-are expected to type a number key (0 \- 9) to select the device to boot.
-.SP
-If
-.I fix
-(a small number) is given then the bootstrap is locked into booting the
-.BI /dev/hd fix
-disk or primary partition.  This is needed if 'boot *hd\fIN\fP' is used from
-the monitor to boot an O.S. that needs the active flag set.
+If installed on a hard disk then it will load the bootstrap of the active
+partition and run it.
+.B Masterboot
+can be put in the first sector of a hard disk to boot the active partition,
+or in the first sector of a Minix partition to boot the active subpartition.
 .SP
 If installed on a Minix floppy then it will try to boot the next floppy or
 the first hard disk.  Ideal for floppies with just data on it, they will no
 longer obstruct the boot process if left in the drive.  Also a very useful
 trick to boot from floppy drive 1.
-.SP
-If installed on a hard disk then the active partition is selected and booted
-as usual, unless none of the partitions is marked active, then it will boot
-the next disk.  The latter is useful if you want to boot an operating
-system from the second disk by default.
 .RE
 .SP
-The second bootstrap is named
-.BR extboot .
-It has only one function, to boot the logical partition named by
-.IR fix .
-.I Fix
-is not optional for
-.B extboot
-and must be a number-letter pair, like
-.B 2c
-for
-.BR /dev/hd2c .
+The other bootstrap named
+.B jumpboot
+is used for the weird cases:
 .SP
-.B Extboot
-or
-.B masterboot
-with a fix key need not be installed in the hard disk master bootstrap per
-se if you don't want to mess with the DOS master bootstrap, or if you want
-keep the active flag functioning.  An extended partition or a non-root Minix
-partition are better candidates.  It seems logical to put
-.B extboot
-in the extended partition boot block.
+.RS
+If your default operating system is installed on another disk then
+.B jumpboot
+can be installed on the first disk and instructed to boot the disk,
+partition or subpartition that must be booted by default.
+.SP
+If one of your operating systems insists on being active when booted then use
+.B jumpboot
+to ignore the active flag and boot your preferred O.S. instead.  The Boot
+Monitor's "\fBboot\ \(**\fP" trick to activate the partition to boot is
+useful here.
+.SP
+To boot a logical partition within an extended partition.  Note that you can
+put
+.B jumpboot
+in the first sector of the extended partition in this case, with the
+extended partition marked active.
+.SP
+If you hold down the ALT key while
+.B jumpboot
+is being executed, then you can type the disk, partition or subpartition
+you want to boot as one to three digits followed by typing ENTER.
+.RE
+.SP
+.B Jumpboot
+can be programmed to boot a certain partition with the
+.I keys
+argument and optionally also the
+.I logical
+argument.
+.I Keys
+are one to three digits naming the disk, partition or subpartition.  If the
+device to boot is
+.BR /dev/c0d1p3s0 ,
+then
+.I keys
+is
+.BR 130 .
+These are the same three digits you can type manually if you hold down ALT
+at boot.  To program
+.B jumpboot
+to boot a logical partition within an extended partition, let
+.I keys
+be just a disk number, and specify
+.I logical
+as the name of the logical partition on that disk that is to be booted.
+(Actually
+.I logical
+can be any device name, but this form should be avoided because it offers
+less checking to see if the device is still there after a disk
+rearrangement.)
 .SP
 A backup copy of the current master bootstrap (including the partition
 table) can be made with:
@@ -253,7 +283,7 @@ table) can be made with:
 dd if=\fIdevice\fP of=\fIbackup-file\fP count=1
 .SP
 .RE
-A simple 'cat \fIbackup-file\fP > \fIdevice\fP' will put it back.  You can
+A simple 'cp \fIbackup-file\fP \fIdevice\fP' will put it back.  You can
 also use
 .B fdisk /mbr
 under MS-DOS 5.0 (or newer) to restore the master bootstrap.
@@ -273,27 +303,86 @@ Master bootstrap.  Can be placed in the first sector of a disk to select the
 active partition.  In a Minix primary partition it selects the active
 subpartition.
 .TP
-.B /usr/mdec/extboot
-Extended partition bootstrap.
+.B /usr/mdec/jumpboot
+Special "boot this" bootstrap.
 .SH "SEE ALSO"
 .BR part (8),
 .BR monitor (8).
 .SH DIAGNOSTICS
-.I Boot
-doesn't fit on
-.I device
+.I File
+is not an executable
 .RS
-If there is no space on the device to add the boot code.  This usually
-means that there is no boot code in the file system you use
-.B installboot \-device
-on.
+What you think is boot code or part of the kernel isn't.
 .RE
-.PP
-.I Image
-doesn't fit on
+.SP
+.I Program
+will crash, text/data segment larger then 64K
+.RS
+One of the 16-bit programs added to an image has a text or data segment
+that is larger than 64K.  You probably enabled too many drivers, or
+configured too many buffers.
+.RE
+.SP
+.I File
+can't be attached to
 .I device
 .RS
-If the device is too small for all the images you try to put on it.
+You are trying to put the boot monitor or an image after a file system, but
+there is no or not enough space.  Did you specify the full path of the
+monitor instead of just "boot"?
+.RE
+.SP
+.I Device
+is not a Minix file system
+.RS
+You are using
+.B \-device
+on a device that doesn't contain a file system.  Maybe you specified the
+wrong device, maybe you should make a file system, or maybe you should use
+.BR \-boot .
+.RE
+.SP
+.I Device
+contains a file system
+.RS
+You are about to destroy a file system with
+.BR \-boot .
+Maybe you meant to use
+.BR \-device ?
+You have 10 seconds to make up your mind...
+.RE
+.SP
+.I File
+is too big
+.RS
+Several types of messages like these will tell you that
+.I file
+can't be installed in a boot sector, or that there is no room to add some
+parameters, etc.  Is
+.I file
+really a bootstrap?
+.RE
+.SS "Bootstrap errors"
+Read error
+.RS
+A read error trying to get the next bit of boot code.  You may even get the
+BIOS error code in hex.  Either the device has a bad block, or jumpboot is
+told to read a nonexistent disk.
+.RE
+.SP
+No active partition
+.RS
+None of the partitions in a partition table is marked active.
+.RE
+.SP
+Not bootable
+.RS
+Partition does not exist (jumpboot), or it's bootstrap isn't executable.
+.RE
+.SH NOTES
+The Minix bootstraps can boot beyond the 8G disk size limit if the BIOS
+supports the IBM/MS INT 13 Extensions.  Alas only Minix-vmd can make use of
+this, standard Minix has a 4G disk size limit.
 .SH BUGS
 It has four more options than the SunOS installboot program it is modeled
 after.
@@ -302,3 +391,5 @@ The bootblock code has been crunched to such ugliness that you can use it
 to scare little kids out of your garden.
 .SH AUTHOR
 Kees J. Bot (kjb@cs.vu.nl)
+.\"
+.\" $PchId: installboot.8,v 1.7 2000/08/13 22:09:31 philip Exp $

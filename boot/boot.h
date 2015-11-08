@@ -1,6 +1,10 @@
 /*	boot.h - Info between different parts of boot.	Author: Kees J. Bot
  */
 
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+
 /* Constants describing the metal: */
 
 #define SECTOR_SIZE	512
@@ -61,7 +65,17 @@ typedef struct {		/* One chunk of free memory. */
 } memory;
 
 EXTERN memory mem[3];		/* List of available memory. */
+EXTERN int mon_return;		/* Monitor stays in memory? */
 
+typedef struct bios_env
+{
+	u16_t ax;
+	u16_t bx;
+	u16_t cx;
+	u16_t flags;
+} bios_env_t;
+
+#define FL_CARRY	0x0001	/* carry flag */
 
 /* Functions defined by boothead.s: */
 
@@ -89,10 +103,18 @@ int writesectors(u32_t bufaddr, u32_t sector, U8_t count);
 			/* Write 1 or more sectors to "device". */
 int getch(void);
 			/* Read a keypress. */
+void ungetch(int c);
+			/* Undo a keypress. */
 int escape(void);
 			/* True if escape typed. */
 void putch(int c);
 			/* Send a character to the screen. */
+#if BIOS
+void pause(void);
+			/* Wait for an interrupt. */
+void serial_init(int line);
+#endif			/* Enable copying console I/O to a serial line. */
+
 void set_mode(unsigned mode);
 void clear_screen(void);
 			/* Set video mode / clear the screen. */
@@ -106,9 +128,10 @@ u32_t get_tick(void);
 
 void bootstrap(int device, struct part_entry *entry);
 			/* Execute a bootstrap routine for a different O.S. */
-u32_t minix(u32_t koff, u32_t kcs, u32_t kds,
+void minix(u32_t koff, u32_t kcs, u32_t kds,
 				char *bootparams, size_t paramsize, u32_t aout);
 			/* Start Minix. */
+void int15(bios_env_t *);
 
 
 /* Shared between boot.c and bootimage.c: */
@@ -138,9 +161,10 @@ EXTERN environment *env;	/* Lists the environment. */
 char *b_value(char *name);	/* Get/set the value of a variable. */
 int b_setvar(int flags, char *name, char *value);
 
-EXTERN int fsok;	/* True if the boot device contains an FS. */
+void parse_code(char *code);	/* Parse boot monitor commands. */
+
+extern int fsok;	/* True if the boot device contains an FS. */
 EXTERN u32_t lowsec;	/* Offset to the file system on the boot device. */
-EXTERN u32_t reboot_code; /* Program returned by a rebooting Minix. */
 
 /* Called by boot.c: */
 
@@ -168,12 +192,6 @@ char *unix_err(int err);
 int run_trailer(void);
 			/* Run the trailer function. */
 
-#if BIOS
-/* Use the kernel printf(): */
-void printk(char *fmt, ...);
-#define	printf	printk
-#endif
-
 #if DOS
 /* The monitor runs under MS-DOS. */
 extern char PSP[256];	/* Program Segment Prefix. */
@@ -183,3 +201,7 @@ EXTERN char *drun;	/* Initial command from DOS command line. */
 /* The monitor uses only the BIOS. */
 #define DOS	0
 #endif
+
+/*
+ * $PchId: boot.h,v 1.12 2002/02/27 19:42:45 philip Exp $
+ */

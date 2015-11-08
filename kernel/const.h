@@ -10,17 +10,6 @@
 #define SETPSW(rp, new)	/* permits only certain bits to be set */ \
 	((rp)->p_reg.psw = (rp)->p_reg.psw & ~0xCD5 | (new) & 0xCD5)
 
-/* Initial sp for mm, fs and init.
- *	2 bytes for short jump
- *	2 bytes unused
- *	3 words for init_org[] used by fs only
- *	3 words for real mode debugger trap (actually needs 1 more)
- *	3 words for save and restart temporaries
- *	3 words for interrupt
- * Leave no margin, to flush bugs early.
- */
-#define INIT_SP (2 + 2 + 3 * 2 + 3 * 2 + 3 * 2 + 3 * 2)
-
 #define HCLICK_SHIFT       4	/* log2 of HCLICK_SIZE */
 #define HCLICK_SIZE       16	/* hardware segment conversion magic */
 #if CLICK_SIZE >= HCLICK_SIZE
@@ -30,6 +19,10 @@
 #endif
 #define hclick_to_physb(n) ((phys_bytes) (n) << HCLICK_SHIFT)
 #define physb_to_hclick(n) ((n) >> HCLICK_SHIFT)
+
+/* Disable/Enable hardware interrupts. */
+#define lock()		intr_disable()
+#define unlock()	intr_enable()
 
 /* Interrupt vectors defined/reserved by processor. */
 #define DIVIDE_VECTOR      0	/* divide error */
@@ -122,13 +115,7 @@
 #define TASK_Q             0	/* ready tasks are scheduled via queue 0 */
 #define SERVER_Q           1	/* ready servers are scheduled via queue 1 */
 #define USER_Q             2	/* ready users are scheduled via queue 2 */
-
-#if (MACHINE == ATARI)
-#define SHADOW_Q           3	/* runnable, but shadowed processes */
-#define NQ                 4	/* # of scheduling queues */
-#else
 #define NQ                 3	/* # of scheduling queues */
-#endif
 
 /* Env_parse() return values. */
 #define EP_UNSET	0	/* variable not set */
@@ -141,4 +128,8 @@
  */
 #define vir2phys(vir)	(data_base + (vir_bytes) (vir))
 
-#define printf        printk	/* the kernel really uses printk, not printf */
+/* Translate a pointer to a field in a structure to a pointer to the structure
+ * itself.  So it translates '&struct_ptr->field' back to 'struct_ptr'.
+ */
+#define structof(type, field, ptr) \
+	((type *) (((char *) (ptr)) - offsetof(type, field)))

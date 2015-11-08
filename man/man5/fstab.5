@@ -17,14 +17,10 @@ and
 .B /etc/fstab
 is not read by
 .B mount
-as it should be.  It is instead a simple shell script listing the three
-devices that Minix needs to operate:  The device names of the root file
-system, the temporary (scratch) file system, and the file system for
+as it should be.  It is instead a simple shell script listing the two or
+three devices that Minix needs to operate:  The device names of the root
+file system, the swap file system (optional), and the file system for
 .BR /usr .
-Of these only the /usr file system is mounted in
-.BR /etc/rc ,
-the scratch file system is there for the system administrator to test new
-kernels, or as a temporary file system.
 .PP
 .B /etc/mtab
 contains lines of four fields.  The layout is:
@@ -57,9 +53,10 @@ Mount point.
 .RS
 Either
 .BR 1 ,
-or
 .BR 2 ,
-indicating a V1 or V2 file system.
+or
+.BR swap ,
+indicating a V1 or a V2 file system, or swap space.
 .RE
 .sp
 .B options

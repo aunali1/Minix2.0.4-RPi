@@ -109,14 +109,14 @@ anyone.  The program
 must be present to support the list commands.  This
 program should have mode 111.
 .IP ~ftp/etc)
-Make this directory owned by the super-user and unwritable by
-anyone.  The files
+This directory could be created, and could have
 .BR passwd (5)
 and
 .BR group (5)
-must be present for the 
+databases in it so that
 .B ls
-command to work properly.  These files should be mode 444.
+can show file ownership, but outsiders will grab your password file and
+misuse it to spam you.  So don't bother.
 .IP ~ftp/pub)
 Make this directory mode 755 and owned by the super-user.  Create
 directories in it owned by users if those users want to manage an

@@ -11,8 +11,12 @@ should contain slashes to separate components. The names \fBisodir\fP,
 program sees which function to perform by looking how it was called.
 .PP
 .IP \-a 
-(ASCII) -- convert MS-DOS text files to Minix-style text files by dropping
+(ASCII) -- convert MS-DOS text files to UNIX-style text files by dropping
 the ^M at the end of each line.
+.IP \-B
+List the byte offset and size of a file.  (Useful in scripts that
+want to operate on an ISO image file.  To add a Minix partition table, for
+instance.)
 .SH "BUGS"
 Only Interchange level-1 is supported. The Red Rock extensions and Interchange 
 level-2 are not implemented. 

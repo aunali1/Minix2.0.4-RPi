@@ -14,6 +14,7 @@ usage:
 all:
 	cd ansi && $(MAKE)
 	cd curses && $(MAKE)
+	cd dummy && $(MAKE)
 	cd editline && $(MAKE)
 	cd end && $(MAKE)
 	cd float && $(MAKE)
@@ -25,6 +26,7 @@ all:
 	cd math && $(MAKE)
 	cd other && $(MAKE)
 	cd posix && $(MAKE)
+	test `arch` = i86 || { cd regex && $(MAKE); }
 	cd rts && $(MAKE)
 	cd stdio && $(MAKE)
 	cd syscall && $(MAKE)
@@ -45,9 +47,11 @@ install_i86:	\
 	$(LIB)/libd.a \
 	$(LIB)/libe.a \
 	$(LIB)/libfp.a \
+	$(LIB)/libm.a \
 	$(LIB)/libm2.a \
 	$(LIB)/libp.a \
 	$(LIB)/end.a \
+	$(LIB)/libsys.a \
 	$(LIB)/libcurses.a \
 	$(LIB)/libedit.a \
 	$(LIB)/liby.a \
@@ -73,6 +77,9 @@ $(LIB)/libe.a:	libe.a
 $(LIB)/libfp.a:	libfp.a
 	install -c -o bin $? $@
 
+$(LIB)/libm.a:	libm.a
+	install -c -o bin $? $@
+
 $(LIB)/libm2.a:	libm2.a
 	install -c -o bin $? $@
 
@@ -80,6 +87,9 @@ $(LIB)/libp.a:	libp.a
 	install -c -o bin $? $@
 
 $(LIB)/end.a:	end.a
+	install -c -o bin $? $@
+
+$(LIB)/libsys.a:	libsys.a
 	install -c -o bin $? $@
 
 $(LIB)/libcurses.a:	libcurses.a
@@ -103,9 +113,11 @@ install_i386:	\
 	$(LIB386)/libd.a \
 	$(LIB386)/libe.a \
 	$(LIB386)/libfp.a \
+	$(LIB386)/libm.a \
 	$(LIB386)/libm2.a \
 	$(LIB386)/libp.a \
 	$(LIB386)/end.a \
+	$(LIB386)/libsys.a \
 	$(LIB386)/libcurses.a \
 	$(LIB386)/libedit.a \
 	$(LIB386)/liby.a \
@@ -133,6 +145,9 @@ $(LIB386)/libe.a:	libe.a
 $(LIB386)/libfp.a:	libfp.a
 	install -c -o bin $? $@
 
+$(LIB386)/libm.a:	libm.a
+	install -c -o bin $? $@
+
 $(LIB386)/libm2.a:	libm2.a
 	install -c -o bin $? $@
 
@@ -140,6 +155,9 @@ $(LIB386)/libp.a:	libp.a
 	install -c -o bin $? $@
 
 $(LIB386)/end.a:	end.a
+	install -c -o bin $? $@
+
+$(LIB386)/libsys.a:	libsys.a
 	install -c -o bin $? $@
 
 $(LIB386)/libcurses.a:	libcurses.a
@@ -151,11 +169,11 @@ $(LIB386)/libedit.a:	libedit.a
 $(LIB386)/liby.a:	liby.a
 	install -c -o bin $? $@
 
-$(LIB86)/libc.a:	libc86.a
-	install -c -o bin $? $@
-
-$(LIB86)/end.a:	end86.a
-	install -c -o bin $? $@
+#$(LIB86)/libc.a:	libc86.a
+#	install -c -o bin $? $@
+#
+#$(LIB86)/end.a:	end86.a
+#	install -c -o bin $? $@
 
 clean:
-	find . -name '*.[oa]' -o -name '*.bak' | xargs rm
+	find . -name '*.[oa]' -o -name '*.bak' | xargs rm -rf

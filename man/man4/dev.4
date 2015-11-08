@@ -91,58 +91,58 @@ returns nothing on a read.
 .SS "Floppy disk (major 2)"
 The
 .BR fd0 ,
-.BR fd0a ,
-.BR fd0b ,
-.BR fd0c ,
+.BR fd0p0 ,
+.BR fd0p1 ,
+.BR fd0p2 ,
 and
-.BR fd0d
+.BR fd0p3
 block devices are the first floppy disk and the four partitions that may
 exist on a that floppy disk.  Likewise are
 .BR fd1
 and
-.BR fd1[a\-d]
+.BR fd1p[0\-3]
 the device and partitions for the second floppy disk.  The floppy disk
 devices are described in detail in
 .BR fd (4).
 Partitioning in general is explained in
-.BR hd (4).
-.SS "Hard disk (major 3)"
-The first hard disk can be accessed by block device
-.BR hd0 .
+.BR controller (4).
+.SS "Controller 0 (major 3)"
+The first hard disk on controller 0 can be accessed by block device
+.BR c0d0 .
 This device addresses the entire hard disk from the first to the last
 sector.  A hard disk is normally partitioned in up to four primary
 partitions,
-.BR hd1 ,
-.BR hd2 ,
-.BR hd3 ,
+.BR c0d0p0 ,
+.BR c0d0p1 ,
+.BR c0d0p2 ,
 and
-.BR hd4 .
+.BR c0d0p3 .
 Each of these devices accesses a range of sectors on the
-.B hd0
+.B c0d0
 device.  It is customary to give each operating system on a disk a primary
-partition.  So the MS-DOS C: "drive" can be on
-.BR hd1 ,
+partition.  So the Windows C: "drive" can be on
+.BR c0d0p0 ,
 and Minix can be on
-.BR hd2 .
+.BR c0d0p1 .
 Minix wants to have several partitions on its own, so
-.B hd2
+.B c0d0p1
 can be further subdivided into the subpartitions
-.BR hd2a ,
-.BR hd2b ,
-.BR hd2c ,
+.BR c0d0p1s0 ,
+.BR c0d0p1s1 ,
+.BR c0d0p1s2 ,
 and
-.BR hd2d .
+.BR c0d0p1s3 .
 .B /dev
 contains devices for the first and second hard disk
-.RB ( hd0
+.RB ( c0d0
 and
-.BR hd5 )
+.BR c0d1 ),
 their primary partitions
-.RB ( hd[1\-46\-9] )
+.RB ( c0d[01]p[0\-3] )
 and subpartitions thereof
-.RB ( hd[1\-46\-9][a\-d] ).
+.RB ( c0d[01]p[0\-3]s[0\-3] ).
 More detail can be found in
-.BR hd (4).
+.BR controller (4).
 .SS "Terminals (minor 4)"
 The TTY driver manages the system console device, aptly named
 .BR console ,
@@ -182,26 +182,13 @@ The TCP/IP task is not a kernel task, but a server like MM and FS.  It sits
 between FS and the DP8390 task that manages the ethernet boards.  Together
 they implement the TCP/IP protocol.  See also
 .BR ip (4).
-.SS "CD-ROM (major 8)"
-This is the CD-ROM driver for the Mitsumi proprietary CD-ROM interface.  The
-.BR cd0
-device addresses the whole CD, with extra
-.BR cd[1\-4]
-and
-.BR cd[1\-4][a\-d]
-devices for if the CD also contains partitions with Minix file systems.
-.SS "SCSI disks and tapes (major 10)"
-The
-.B sd*
-devices are disks in the same way as the
-.B hd*
-devices.  Except that these disks are SCSI disks attached to an Adaptec
-1540 controller or compatible.  The driver also manages the
-.B rst*
-and
-.B nrst*
-tape devices (rewinding or non-rewinding).  See
-.BR sd (4).
+.SS "Controller 1 (major 8)"
+Like controller 0 (major 3), but managing a second controller with devices
+.BR /dev/c1* .
+.SS "Controller 2 (major 10)"
+Like controller 0.
+.SS "Controller 3 (major 12)"
+Like controller 0.
 .SS "Audio (major 13)"
 The
 .B audio
@@ -223,9 +210,8 @@ All Minix devices
 .BR ioctl (2),
 .BR console (4),
 .BR fd (4),
-.BR hd (4),
+.BR controller (4),
 .BR ip (4),
-.BR sd (4),
 .BR tty (4),
 .BR MAKEDEV (8).
 .SH DIAGNOSTICS
@@ -254,16 +240,18 @@ device can't do, or an empty tape drive, etc.
 Some devices are not present by default.  The
 .BR MAKEDEV
 script knows how to make them.
-.SS "MS-DOS equivalents"
-The names of MS-DOS devices map to Minix devices as follows:
+.SS "MS-DOS/Windows equivalents"
+The names of MS-DOS/Windows devices probably map to Minix devices as follows:
 .PP
 .RS
 .nf
-.ta +10n +16n
+.ta +\w'COM1mmm'u +\w'c0d1, c0d2, c0d3mmm'u
 A:	fd0
 B:	fd1
-C:	hd1, sd1	(usually the first partition)
-D:	hd6, sd1, sd6	(or an extended partition)
+C:	c0d0p0	(usually the first partition)
+D:	c0d1p0, c0d2p0	(if it's another disk)
+D:	c0d0p1s0	(if it's an extended partition)
+D:	c0d1, c0d2, c0d3	(if it's a CD-ROM)
 CON	console
 COM1	tty00	(UNIX counts from 0)
 LPT1	lp

@@ -17,16 +17,10 @@
 .define	__exit		! dummy for library routines
 .define	___exit		! dummy for library routines
 .define	.fat, .trp	! dummies for library routines
-.define	_in_byte	! read a byte from a port and return it
-.define	_in_word	! read a word from a port and return it
-.define	_out_byte	! write a byte to a port
-.define	_out_word	! write a word to a port
-.define	_port_read	! transfer data from (disk controller) port to memory
-.define	_port_read_byte	! likewise byte by byte
-.define	_port_write	! transfer data from memory to (disk controller) port
-.define	_port_write_byte ! likewise byte by byte
-.define	_lock		! disable interrupts
-.define	_unlock		! enable interrupts
+.define	_phys_insw	! transfer data from (disk controller) port to memory
+.define	_phys_insb	! likewise byte by byte
+.define	_phys_outsw	! transfer data from memory to (disk controller) port
+.define	_phys_outsb	! likewise byte by byte
 .define	_enable_irq	! enable an irq at the 8259 controller
 .define	_disable_irq	! disable an irq
 .define	_phys_copy	! copy data from anywhere to anywhere in memory
@@ -49,29 +43,8 @@
 #define HCHIGH_MASK	0x0F	/* h/w click mask for low byte of hi word */
 #define HCLOW_MASK	0xF0	/* h/w click mask for low byte of low word */
 
-! Imported functions
-
-.extern	p_restart
-.extern	p_save
-.extern	_restart
-.extern	save
-
 ! Exported variables
-
 .extern kernel_cs
-
-! Imported variables
-
-.extern kernel_ds
-.extern _irq_use
-.extern	_blank_color
-.extern	_gdt
-.extern	_protected_mode
-.extern	_vid_seg
-.extern	_vid_size
-.extern	_vid_mask
-.extern	_level0_func
-.extern	_ps_mca
 
 	.text
 !*===========================================================================*
@@ -82,8 +55,6 @@
 
 _monitor:
 	call	prot2real		! switch to real mode
-	mov	ax, _reboot_code+0	! address of new parameters
-	mov	dx, _reboot_code+2
 	mov	sp, _mon_sp		! restore monitor stack pointer
 	mov	bx, _mon_ss		! monitor data segment
 	mov	ds, bx
@@ -241,8 +212,10 @@ prot2real:
 	cmp	_processor, #386	! is this a 386?
 	jae	p2r386
 p2r286:
-	mov	_gdt+ES_286_OFFSET+DESC_BASE, #0x0000
-	movb	_gdt+ES_286_OFFSET+DESC_BASE_MIDDLE, #0x00
+	xor	ax, ax
+	mov	_gdt+ES_286_OFFSET+DESC_BASE, ax
+	movb	_gdt+ES_286_OFFSET+DESC_BASE_MIDDLE, al
+	movb	_gdt+ES_286_OFFSET+DESC_BASE_HIGH, al
 	mov	ax, #ES_286_SELECTOR
 	mov	es, ax			! BIOS data segment
   eseg	mov	0x0467, #real		! set return from shutdown address
@@ -392,273 +365,183 @@ ___exit:
 
 
 !*===========================================================================*
-!*				in_byte					     *
+!*				phys_insw				     *
 !*===========================================================================*
-! PUBLIC unsigned in_byte(port_t port);
-! Read an (unsigned) byte from the i/o port  port  and return it.
+! PUBLIC void phys_insw(Port_t port, phys_bytes buf, size_t count);
+! Input an array from an I/O port.  Absolute address version of insw().
 
-_in_byte:
-	pop	bx
-	pop	dx		! port
-	dec	sp
-	dec	sp
-	inb			! input 1 byte
-	subb	ah,ah		! unsign extend
-	jmp	(bx)
+_phys_insw:
+	call	portio_intro
+	mov	es, bx			! destination segment
+	mov	di, ax			! destination offset
+	shr	cx, #1			! word count
+   rep	ins				! input many words
+	jmp	portio_return
 
-
-!*===========================================================================*
-!*				in_word					     *
-!*===========================================================================*
-! PUBLIC unsigned short in_word(port_t port);
-! Read an (unsigned) word from the i/o port and return it.
-
-_in_word:
-	pop	bx
-	pop	dx		! port
-	dec	sp
-	dec	sp		! added to new klib.s 3/21/91 d.e.c.
-	inw			! input 1 word no sign extend needed
-	jmp	(bx)
-
-
-!*===========================================================================*
-!*				out_byte				     *
-!*===========================================================================*
-! PUBLIC void out_byte(port_t port, int value);
-! Write  value  (cast to a byte)  to the I/O port  port.
-
-_out_byte:
-	pop	bx
-	pop	dx		! port
-	pop	ax		! value
-	sub	sp,#2+2
-	outb			! output 1 byte
-	jmp	(bx)
-
-
-!*===========================================================================*
-!*				out_word				     *
-!*===========================================================================*
-! PUBLIC void out_word(port_t port, int value);
-! Write  value  (cast to a word)  to the I/O port  port.
-
-_out_word:
-	pop	bx
-	pop	dx		! port
-	pop	ax		! value
-	sub	sp,#2+2
-	outw			! output 1 word
-	jmp	(bx)
-
-
-!*===========================================================================*
-!*				port_read				     *
-!*===========================================================================*
-! PUBLIC void port_read(port_t port, phys_bytes destination,unsigned bytcount);
-! Transfer data from (hard disk controller) port to memory.
-
-_port_read:
-	push	bp
-	mov	bp,sp
+portio_intro:
+	pop	ax			! hold return address
+	push	bp			! create stack frame
+	mov	bp, sp
+	push	si
 	push	di
-	push	es
-
-	call	portio_setup
-	shr	cx,#1		! count in words
-	mov	di,bx		! di = destination offset
-	mov	es,ax		! es = destination segment
-	rep
-	ins
-
-	pop	es
-	pop	di
-	pop	bp
-	ret
-
+	push	ax			! retore return address
+	mov	dx, 4(bp)		! port to do I/O
+	mov	ax, 6(bp)		! source/destination address in bx:ax
+	mov	bx, 8(bp)
+	mov	cx, 10(bp)		! count in bytes
+	cld				! direction is UP
 portio_setup:
-	mov	ax,4+2(bp)	! source/destination address in dx:ax
-	mov	dx,4+2+2(bp)
-	mov	bx,ax
-	and	bx,#OFF_MASK	! bx = offset = address % 16
-	andb	dl,#HCHIGH_MASK	! ax = segment = address / 16 % 0x10000
-	andb	al,#HCLOW_MASK
-	orb	al,dl
-	movb	cl,#HCLICK_SHIFT
-	ror	ax,cl
-	mov	cx,4+2+4(bp)	! count in bytes
-	mov	dx,4(bp)	! port to read from
-	cld			! direction is UP
+	push	cx			! segment/offset setup
+	movb	ch, bl
+	mov	bx, ax
+	and	ax, #0x000F		! ax = offset = address % HCLICK_SIZE
+	movb	cl, #4
+	shr	bx, cl
+	shlb	ch, cl
+	orb	bh, ch			! bx = segment = address / HCLICK_SIZE
+	pop	cx
 	ret
 
-
-!*===========================================================================*
-!*				port_read_byte				     *
-!*===========================================================================*
-! PUBLIC void port_read_byte(port_t port, phys_bytes destination,
-!							unsigned bytcount);
-! Transfer data port to memory.
-
-_port_read_byte:
-	push	bp
-	mov	bp,sp
-	push	di
-	push	es
-
-	call	portio_setup
-	mov	di,bx		! di = destination offset
-	mov	es,ax		! es = destination segment
-	rep
-	insb
-
-	pop	es
-	pop	di
-	pop	bp
-	ret
-
-
-!*===========================================================================*
-!*				port_write				     *
-!*===========================================================================*
-! PUBLIC void port_write(port_t port, phys_bytes source, unsigned bytcount);
-! Transfer data from memory to (hard disk controller) port.
-
-_port_write:
-	push	bp
-	mov	bp,sp
-	push	si
-	push	ds
-
-	call	portio_setup
-	shr	cx,#1		! count in words
-	mov	si,bx		! si = source offset
-	mov	ds,ax		! ds = source segment
-	rep
-	outs
-
-	pop	ds
+portio_return:
+	mov	ax, ss			! restore segment registers
+	mov	ds, ax
+	mov	es, ax
+	pop	di			! unwind stack frame
 	pop	si
 	pop	bp
 	ret
 
 
 !*===========================================================================*
-!*				port_write_byte				     *
+!*				phys_insb				     *
 !*===========================================================================*
-! PUBLIC void port_write_byte(port_t port, phys_bytes source,
-!							unsigned bytcount);
-! Transfer data from memory to port.
+! PUBLIC void phys_insb(Port_t port, phys_bytes buf, size_t count);
+! Input an array from an I/O port.  Absolute address version of insb().
+! Note: The 8086 doesn't have string I/O instructions, so a loop is used.
 
-_port_write_byte:
-	push	bp
-	mov	bp,sp
-	push	si
-	push	ds
-
-	call	portio_setup
-	mov	si,bx		! si = source offset
-	mov	ds,ax		! ds = source segment
-	rep
-	outsb
-
-	pop	ds
-	pop	si
-	pop	bp
-	ret
+_phys_insb:
+	call	portio_intro
+	mov	es, bx			! destination segment
+	mov	di, ax			! destination offset
+	jcxz	1f
+0:	inb	dx			! input 1 byte
+	stosb				! write 1 byte
+	loop	0b			! many times
+1:
+	jmp	portio_return
 
 
 !*===========================================================================*
-!*				lock					     *
+!*				phys_outsw				     *
 !*===========================================================================*
-! PUBLIC void lock();
-! Disable CPU interrupts.
+! PUBLIC void phys_outsw(Port_t port, phys_bytes buf, size_t count);
+! Output an array to an I/O port.  Absolute address version of outsw().
 
-_lock:
-	cli				! disable interrupts
-	ret
+_phys_outsw:
+	call	portio_intro
+	mov	ds, bx			! source segment
+	mov	si, ax			! source offset
+	shr	cx, #1			! word count
+   rep	outs				! output many words
+	jmp	portio_return
 
 
 !*===========================================================================*
-!*				unlock					     *
+!*				phys_outsb				     *
 !*===========================================================================*
-! PUBLIC void unlock();
-! Enable CPU interrupts.
+! PUBLIC void phys_outsb(Port_t port, phys_bytes buf, size_t count);
+! Output an array to an I/O port.  Absolute address version of outsb().
 
-_unlock:
-	sti
-	ret
+_phys_outsb:
+	call	portio_intro
+	mov	ds, bx			! source segment
+	mov	si, ax			! source offset
+	jcxz	1f
+0:	lodsb				! read 1 byte
+	outb	dx			! output 1 byte
+	loop	0b			! many times
+1:
+	jmp	portio_return
 
 
 !*==========================================================================*
 !*				enable_irq				    *
 !*==========================================================================*/
-! PUBLIC void enable_irq(unsigned irq)
+! PUBLIC void enable_irq(irq_hook_t *hook)
 ! Enable an interrupt request line by clearing an 8259 bit.
 ! Equivalent code for irq < 8:
-!	out_byte(INT_CTLMASK, in_byte(INT_CTLMASK) & ~(1 << irq));
+!   if ((irq_actids[hook->irq] &= ~hook->id) == 0)
+!	outb(INT_CTLMASK, inb(INT_CTLMASK) & ~(1 << irq));
 
 _enable_irq:
-	mov	bx, sp
-	mov	cx, 2(bx)		! irq
+	push	bp
+	mov	bp, sp
 	pushf
 	cli
+	mov	bx, 4(bp)		! hook
+	mov	cx, 4(bx)		! irq
+	mov	ax, 6(bx)		! id bit
+	not	ax
+	mov	bx, cx
+	add	bx, bx
+	and	_irq_actids(bx), ax	! clear this id bit
+	jnz	en_done			! still masked by other handlers?
 	movb	ah, #~1
 	rolb	ah, cl			! ah = ~(1 << (irq % 8))
+	mov	dx, #INT_CTLMASK	! enable irq < 8 at the master 8259
 	cmpb	cl, #8
-	jae	enable_8		! enable irq >= 8 at the slave 8259
-enable_0:
-	inb	INT_CTLMASK
+	jb	0f
+	mov	dx, #INT2_CTLMASK	! enable irq >= 8 at the slave 8259
+0:	inb	dx
 	andb	al, ah
-	outb	INT_CTLMASK		! clear bit at master 8259
-	popf
-	ret
-enable_8:
-	inb	INT2_CTLMASK
-	andb	al, ah
-	outb	INT2_CTLMASK		! clear bit at slave 8259
-	popf
+	outb	dx			! clear bit at the 8259
+en_done:popf
+	leave
 	ret
 
 
 !*==========================================================================*
 !*				disable_irq				    *
 !*==========================================================================*/
-! PUBLIC int disable_irq(unsigned irq)
+! PUBLIC int disable_irq(irq_hook_t *hook)
 ! Disable an interrupt request line by setting an 8259 bit.
 ! Equivalent code for irq < 8:
-!	out_byte(INT_CTLMASK, in_byte(INT_CTLMASK) | (1 << irq));
+!   irq_actids[hook->irq] |= hook->id;
+!   outb(INT_CTLMASK, inb(INT_CTLMASK) | (1 << irq));
 ! Returns true iff the interrupt was not already disabled.
 
 _disable_irq:
-	mov	bx, sp
-	mov	cx, 2(bx)		! irq
+	push	bp
+	mov	bp, sp
 	pushf
 	cli
+	mov	bx, 4(bp)		! hook
+	mov	cx, 4(bx)		! irq
+	mov	ax, 6(bx)		! id bit
+	pushf
+	cli
+	mov	bx, cx
+	add	bx, bx
+	or	_irq_actids(bx), ax	! set this id bit
 	movb	ah, #1
 	rolb	ah, cl			! ah = (1 << (irq % 8))
+	mov	dx, #INT_CTLMASK	! disable irq < 8 at the master 8259
 	cmpb	cl, #8
-	jae	disable_8		! disable irq >= 8 at the slave 8259
-disable_0:
-	inb	INT_CTLMASK
+	jb	0f
+	mov	dx, #INT2_CTLMASK	! disable irq >= 8 at the slave 8259
+0:	inb	dx
 	testb	al, ah
 	jnz	dis_already		! already disabled?
 	orb	al, ah
-	outb	INT_CTLMASK		! set bit at master 8259
-	popf
+	outb	dx			! set bit at the 8259
 	mov	ax, #1			! disabled by this function
-	ret
-disable_8:
-	inb	INT2_CTLMASK
-	testb	al, ah
-	jnz	dis_already		! already disabled?
-	orb	al, ah
-	outb	INT2_CTLMASK		! set bit at slave 8259
 	popf
-	mov	ax, #1			! disabled by this function
+	leave
 	ret
 dis_already:
-	popf
 	xor	ax, ax			! already disabled
+	popf
+	leave
 	ret
 
 
@@ -785,22 +668,21 @@ _reset:
 !*===========================================================================*
 ! PUBLIC void mem_vid_copy(u16 *src, unsigned dst, unsigned count);
 !
-! Copy count characters from kernel memory to video memory.  Src, dst and
-! count are character (word) based video offsets and counts.  If src is null
-! then screen memory is blanked by filling it with blank_color.
-
-MVC_ARGS	=	2 + 2 + 2 + 2	! 2 + 2 + 2
-!			es  di  si  ip	 src dst ct
+! Copy count characters from kernel memory to video memory.  Src is an ordinary
+! pointer to a word, but dst and count are character (word) based video offset
+! and count.  If src is null then screen memory is blanked by filling it with
+! blank_color.
 
 _mem_vid_copy:
+	push	bp
+	mov	bp, sp
 	push	si
 	push	di
 	push	es
-	mov	bx, sp
-	mov	si, MVC_ARGS(bx)	! source
-	mov	di, MVC_ARGS+2(bx)	! destination
-	mov	dx, MVC_ARGS+2+2(bx)	! count
-	mov	es, _vid_seg		! destination is video segment
+	mov	si, 4(bp)		! source
+	mov	di, 6(bp)		! destination
+	mov	dx, 8(bp)		! count
+	mov	es, _vid_seg		! segment containing video memory
 	cld				! make sure direction is up
 mvc_loop:
 	and	di, _vid_mask		! wrap address
@@ -812,6 +694,7 @@ mvc_loop:
 	mov	cx, ax			! cx = min(cx, vid_size - di)
 0:	sub	dx, cx			! count -= cx
 	shl	di, #1			! byte address
+	add	di, _vid_off		! in video memory
 	test	si, si			! source == 0 means blank the screen
 	jz	mvc_blank
 mvc_copy:
@@ -824,13 +707,15 @@ mvc_blank:
 	stos				! copy blanks to video memory
 	!jmp	mvc_test
 mvc_test:
-	shr	di, #1			! word addresses
+	sub	di, _vid_off
+	shr	di, #1			! back to a word address
 	test	dx, dx
 	jnz	mvc_loop
 mvc_done:
 	pop	es
 	pop	di
 	pop	si
+	pop	bp
 	ret
 
 
@@ -843,18 +728,16 @@ mvc_done:
 ! Used for scrolling, line or character insertion and deletion.  Src, dst
 ! and count are character (word) based video offsets and counts.
 
-VVC_ARGS	=	2 + 2 + 2 + 2	! 2 + 2 + 2
-!			es  di  si  ip 	 src dst ct
-
 _vid_vid_copy:
+	push	bp
+	mov	bp, sp
 	push	si
 	push	di
 	push	es
-	mov	bx, sp
-	mov	si, VVC_ARGS(bx)	! source
-	mov	di, VVC_ARGS+2(bx)	! destination
-	mov	dx, VVC_ARGS+2+2(bx)	! count
-	mov	es, _vid_seg		! use video segment
+	mov	si, 4(bp)		! source
+	mov	di, 6(bp)		! destination
+	mov	dx, 8(bp)		! count
+	mov	es, _vid_seg		! segment containing video memory
 	cmp	si, di			! copy up or down?
 	jb	vvc_down
 vvc_up:
@@ -874,12 +757,7 @@ vvc_uploop:
 	jbe	0f
 	mov	cx, ax			! cx = min(cx, vid_size - di)
 0:	sub	dx, cx			! count -= cx
-	shl	si, #1
-	shl	di, #1			! byte addresses
-	rep
-   eseg movs				! copy video words
-	shr	si, #1
-	shr	di, #1			! word addresses
+	call	vvc_copy
 	test	dx, dx
 	jnz	vvc_uploop		! again?
 	jmp	vvc_done
@@ -902,12 +780,7 @@ vvc_downloop:
 	jbe	0f
 	mov	cx, ax			! cx = min(cx, di + 1)
 0:	sub	dx, cx			! count -= cx
-	shl	si, #1
-	shl	di, #1			! byte addresses
-	rep
-   eseg	movs				! copy video words
-	shr	si, #1
-	shr	di, #1			! word addresses
+	call	vvc_copy
 	test	dx, dx
 	jnz	vvc_downloop		! again?
 	cld				! C compiler expect up
@@ -916,6 +789,24 @@ vvc_done:
 	pop	es
 	pop	di
 	pop	si
+	pop	bp
+	ret
+
+! Copy video words.  (Inner code of both the up and downcopying loop.)
+vvc_copy:
+	shl	si, #1
+	shl	di, #1			! byte addresses
+	add	si, _vid_off
+	add	di, _vid_off		! in video memory
+	push	ds			! must set ds here, 8086 can't do
+	mov	ds, _vid_seg		! 'rep eseg movs' with interrupts on
+	rep
+	movs				! copy video words
+	pop	ds
+	sub	si, _vid_off
+	sub	di, _vid_off
+	shr	si, #1
+	shr	di, #1			! back to word addresses
 	ret
 
 
@@ -973,63 +864,64 @@ kip_done:
 ! that just gets in the way here.
 
 p_cp_mess:
-	cld
-	pop	dx
-	pop	bx		! proc
-	pop	cx		! source clicks
-	pop	ax		! source offset
-#if CLICK_SHIFT != HCLICK_SHIFT + 4
-#error /* the only click size supported is 256, to avoid slow shifts here */
-#endif
-	addb	ah,cl		! calculate source offset
-	adcb	ch,#0		! and put in base of source descriptor
-	mov	_gdt+DS_286_OFFSET+DESC_BASE,ax
-	movb	_gdt+DS_286_OFFSET+DESC_BASE_MIDDLE,ch
-	pop	cx		! destination clicks
-	pop	ax		! destination offset
-	addb	ah,cl		! calculate destination offset
-	adcb	ch,#0		! and put in base of destination descriptor
-	mov	_gdt+ES_286_OFFSET+DESC_BASE,ax
-	movb	_gdt+ES_286_OFFSET+DESC_BASE_MIDDLE,ch
-	sub	sp,#2+2+2+2+2
-
+	mov	bx, sp		! bx -> arguments
+	push	si
+	push	di
 	push	ds
 	push	es
-	mov	ax,#DS_286_SELECTOR
-	mov	ds,ax
-	mov	ax,#ES_286_SELECTOR
-	mov	es,ax
 
-  eseg	mov	0,bx		! proc no. of sender from arg, not msg
-	mov	ax,si
-	mov	bx,di
-	mov	si,#2		! src offset is now 2 relative to start of seg
-	mov	di,si		! and destination offset
-	mov	cx,#Msize-1	! word count
+	mov	ax, 4(bx)	! Compute source descriptor base
+	mov	dx, ax
+	shl	ax, #CLICK_SHIFT
+	shr	dx, #16-CLICK_SHIFT	! dx:ax = src_clicks * CLICK_SIZE
+	add	ax, 6(bx)
+	adc	dx, #0			! dx:ax += src_offset
+	mov	_gdt+DS_286_OFFSET+DESC_BASE, ax
+	movb	_gdt+DS_286_OFFSET+DESC_BASE_MIDDLE, dl
+	movb	_gdt+DS_286_OFFSET+DESC_BASE_HIGH, dh
+
+	mov	ax, 8(bx)	! Compute destination descriptor base
+	mov	dx, ax
+	shl	ax, #CLICK_SHIFT
+	shr	dx, #16-CLICK_SHIFT	! dx:ax = dst_clicks * CLICK_SIZE
+	add	ax, 10(bx)
+	adc	dx, #0			! dx:ax += dst_offset
+	mov	_gdt+ES_286_OFFSET+DESC_BASE, ax
+	movb	_gdt+ES_286_OFFSET+DESC_BASE_MIDDLE, dl
+	movb	_gdt+ES_286_OFFSET+DESC_BASE_HIGH, dh
+
+	mov	bx, 2(bx)		! proc no
+	mov	ax, #DS_286_SELECTOR
+	mov	ds, ax
+	mov	ax, #ES_286_SELECTOR
+	mov	es, ax
+
+  eseg	mov	0, bx		! proc no. of sender from arg, not msg
+	mov	si, #2		! src offset is now 2 relative to start of seg
+	mov	di, si		! and destination offset
+	mov	cx, #Msize-1	! word count
+	cld			! direction is up
 	rep
-	movs
-	mov	di,bx
-	mov	si,ax
+	movs			! copy message (except first word)
+
 	pop	es
 	pop	ds
-	jmp	(dx)
+	pop	di
+	pop	si
+	ret
 
 
 !*===========================================================================*
 !*				p_portio_setup				     *
 !*===========================================================================*
-! The port_read, port_write, etc. functions need a setup routine that uses
-! a segment descriptor.
+! The phys_insw, phys_outsw, etc. functions need an address setup routine that
+! uses a segment descriptor.
 p_portio_setup:
-	mov	ax,4+2(bp)	! source/destination address in dx:ax
-	mov	dx,4+2+2(bp)
-	mov	_gdt+DS_286_OFFSET+DESC_BASE,ax
-	movb	_gdt+DS_286_OFFSET+DESC_BASE_MIDDLE,dl
-	xor	bx,bx		! bx = 0 = start of segment
-	mov	ax,#DS_286_SELECTOR ! ax = segment selector
-	mov	cx,4+2+4(bp)	! count in bytes
-	mov	dx,4(bp)	! port to read from
-	cld			! direction is UP
+	mov	_gdt+DS_286_OFFSET+DESC_BASE, ax
+	movb	_gdt+DS_286_OFFSET+DESC_BASE_MIDDLE, bl
+	movb	_gdt+DS_286_OFFSET+DESC_BASE_HIGH, bh
+	xor	ax, ax			! ax = 0 = start of segment
+	mov	bx, #DS_286_SELECTOR	! bx = segment selector
 	ret
 
 
@@ -1042,9 +934,11 @@ p_phys_copy:
 	pop	_gdt+DS_286_OFFSET+DESC_BASE
 	pop	ax		! pop source into base of source descriptor
 	movb	_gdt+DS_286_OFFSET+DESC_BASE_MIDDLE,al
+	movb	_gdt+DS_286_OFFSET+DESC_BASE_HIGH,ah
 	pop	_gdt+ES_286_OFFSET+DESC_BASE
 	pop	ax		! pop destination into base of dst descriptor
 	movb	_gdt+ES_286_OFFSET+DESC_BASE_MIDDLE,al
+	movb	_gdt+ES_286_OFFSET+DESC_BASE_HIGH,ah
 	pop	cx		! byte count in bx:cx
 	pop	bx
 	sub	sp,#4+4+4
@@ -1068,8 +962,10 @@ ppc_large:
 	pop	cx
 	dec	bx
 	pop	ds		! update the descriptors
-	incb	_gdt+DS_286_OFFSET+DESC_BASE_MIDDLE
-	incb	_gdt+ES_286_OFFSET+DESC_BASE_MIDDLE
+	addb	_gdt+DS_286_OFFSET+DESC_BASE_MIDDLE,#1
+	adcb	_gdt+DS_286_OFFSET+DESC_BASE_HIGH,#0
+	addb	_gdt+ES_286_OFFSET+DESC_BASE_MIDDLE,#1
+	adcb	_gdt+ES_286_OFFSET+DESC_BASE_HIGH,#0
 	push	ds
 ppc_next:
 	mov	ax,#DS_286_SELECTOR	! (re)load the selectors

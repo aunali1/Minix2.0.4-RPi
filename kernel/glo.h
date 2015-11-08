@@ -50,12 +50,13 @@ EXTERN int ega;			/* nonzero if console is EGA */
 EXTERN int vga;			/* nonzero if console is VGA */
 
 /* Miscellaneous. */
-EXTERN irq_handler_t irq_table[NR_IRQ_VECTORS];
+EXTERN irq_hook_t *irq_hooks[NR_IRQ_VECTORS];	/* list of IRQ handlers */
+EXTERN int irq_actids[NR_IRQ_VECTORS];		/* IRQ ID bits active */
 EXTERN int irq_use;		/* bit map of all in-use irq's */
 EXTERN reg_t mon_ss, mon_sp;	/* monitor stack */
 EXTERN int mon_return;		/* true if return to the monitor possible */
-EXTERN phys_bytes reboot_code;	/* program for the boot monitor */
-EXTERN union reg86 reg86;	/* registers used in an 8086 interrupt */
+EXTERN phys_bytes mon_params;	/* boot parameter block passed in/out */
+EXTERN size_t mon_parmsize;	/* boot parameter block size */
 
 /* Variables that are initialized elsewhere are just extern here. */
 extern struct segdesc_s gdt[];	/* global descriptor table for protected mode*/

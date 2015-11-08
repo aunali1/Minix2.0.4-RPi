@@ -10,6 +10,8 @@ LIBRARY	= ../libc.a
 all:	$(LIBRARY)
 
 OBJECTS	= \
+	$(LIBRARY)(dhcp_gettag.o) \
+	$(LIBRARY)(dhcp_settag.o) \
 	$(LIBRARY)(ether_line.o) \
 	$(LIBRARY)(ethera2n.o) \
 	$(LIBRARY)(ethere2a.o) \
@@ -38,11 +40,19 @@ OBJECTS	= \
 	$(LIBRARY)(res_mkquery.o) \
 	$(LIBRARY)(res_query.o) \
 	$(LIBRARY)(res_send.o) \
+	$(LIBRARY)(ruserok.o) \
+	$(LIBRARY)(servxcheck.o) \
 	$(LIBRARY)(strcasecmp.o) \
 
 $(LIBRARY):	$(OBJECTS)
 	aal cr $@ *.o
 	rm *.o
+
+$(LIBRARY)(dhcp_gettag.o):	dhcp_gettag.c
+	$(CC1) dhcp_gettag.c
+
+$(LIBRARY)(dhcp_settag.o):	dhcp_settag.c
+	$(CC1) dhcp_settag.c
 
 $(LIBRARY)(ether_line.o):	ether_line.c
 	$(CC1) ether_line.c
@@ -129,7 +139,13 @@ $(LIBRARY)(res_query.o):	res_query.c
 	$(CC1) res_query.c
 
 $(LIBRARY)(res_send.o):	res_send.c
-	$(CC1) -m res_send.c
+	$(CC1) res_send.c
+
+$(LIBRARY)(ruserok.o):	ruserok.c
+	$(CC1) ruserok.c
+
+$(LIBRARY)(servxcheck.o):	servxcheck.c
+	$(CC1) servxcheck.c
 
 $(LIBRARY)(strcasecmp.o):	strcasecmp.c
 	$(CC1) strcasecmp.c

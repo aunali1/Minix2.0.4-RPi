@@ -35,16 +35,25 @@ from
 .I host
 to login.
 .PP
-The
-.B .rhosts
-file is checked to be owned by
-.I user
-or root, and only its owner may be able to write it.
+Under Minix
+.I host
+may be a pattern using
+.B "*"
+as a wildcard.  One can use this, carefully one may hope, to allow an
+entire domain to log in.
+.I Host
+may also be an IP address, or a network specification in CIDR form, e.g.
+172.16.102.64/27.
 .SH "SEE ALSO"
 .BR rlogin (1),
 .BR rsh (1).
 .SH NOTES
 Minix has no restrictions on becoming super-user remotely.  Other systems
-usually do.
+usually require one to log in as a user and then use
+.BR su
+to become root.
+.PP
+You must use fully qualified hostnames, it is not possible to
+omit the domain part.
 .SH AUTHOR
-Kees J. Bot (kjb@cs.vu.nl)
+Kees J. Bot <kjb@cs.vu.nl>

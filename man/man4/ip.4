@@ -29,8 +29,23 @@ The
 and
 .B udp*
 devices give access to the Internet Protocol (IP) services in Minix.
-There are 16 such devices for four different networks, and four
-different ways of accessing them.  The
+There can be up to 16 different networks, with 4 network devices each
+(a network has either an
+.B eth*
+or a
+.B psip*
+device, not both.)
+The
+.B *
+in the device names is a decimal number, so one may see names from
+.B ip0
+to
+.BR ip15 .
+A program scanning all networks must try all 16, and not stop if one in
+between is missing.  One network is the default network.  Its devices are
+linked to names without numbers.
+.PP
+The
 .B eth*
 and
 .B psip*
@@ -40,10 +55,10 @@ The
 .BR tcp* ,
 and
 .B udp*
-devices give access to IP, TCP, or UDP services.  See
-.BR netdefault (8)
-for a description of the default network devices and environment
-variables.  The proper TCP device to use for instance is found by:
+devices give access to IP, TCP, or UDP services.
+.PP
+Most programs that use TCP/IP use code like the following to access the
+proper devices:
 .PP
 .RS
 .nf
@@ -52,6 +67,52 @@ if ((tcp_device= getenv("TCP_DEVICE")) == NULL)
 .fi
 .RE
 .PP
+The low level networking programs such as
+.BR ifconfig (8)
+also have options to select the device they are working with.  The
+convention is:
+.PP
+.RS
+.BI ETH_DEVICE= device
+.br
+.BI -E " device"
+.RS
+Device to use as raw ethernet device instead of the default /dev/eth.
+.RE
+.SP
+.BI PSIP_DEVICE= device
+.br
+.BI -P " device"
+.RS
+Pseudo IP device to use instead of
+.BR /dev/psip .
+.RE
+.SP
+.BI IP_DEVICE= device
+.br
+.BI -I " device"
+.RS
+IP device to use instead of
+.BR /dev/ip .
+.RE
+.SP
+.BI TCP_DEVICE= device
+.br
+.BI -T " device"
+.RS
+TCP device to use instead of
+.BR /dev/tcp .
+.RE
+.SP
+.BI UDP_DEVICE= device
+.br
+.BI -U " device"
+.RS
+UDP device to use instead of
+.BR /dev/udp .
+.RE
+.RE
+.SS Programming
 Access to the IP services is provided using filedescriptors to open IP
 devices.  These open IP channels can be configured with
 .BR ioctl (2)
@@ -62,7 +123,7 @@ and
 .SS "Types (general)"
 .IP <sys/types.h>
 .br
-defines
+Defines
 .BR u8_t ,
 .BR u16_t ,
 .B u32_t
@@ -78,67 +139,74 @@ for use in prototypes).
 .SS "Types (eth)"
 .IP <net/gen/ether.h>
 .br
-defines struct ether_addr (\fBether_addr_t\fP) and
+Defines struct ether_addr (\fBether_addr_t\fP) and
 .B ether_type_t
 and
 .B Ether_type_t
 for use in prototypes.
 .IP <net/gen/eth_io.h>
 .br
-defines struct nwio_ethopt (\fBnwio_ethopt_t\fP) and
+Defines struct nwio_ethopt (\fBnwio_ethopt_t\fP) and
 struct nwio_ethstat (\fBnwio_ethstat_t\fP)
 .IP <net/gen/eth_hdr.h>
 .br
-defines struct eth_hdr (\fBeth_hdr_t\fP)
+Defines struct eth_hdr (\fBeth_hdr_t\fP)
+.SS "Types (psip)"
+.IP <net/gen/psip_hdr.h>
+.br
+[[[No description available yet.]]]
+.IP <net/gen/psip_io.h>
+.br
+[[[No description available yet.]]]
 .SS "Types (ip)"
 .IP <net/gen/in.h>
 .br
-defines
+Defines
 .BR ipaddr_t ,
 .BR ipproto_t
 and struct ip_hdropt (\fBip_hdropt_t\fP).
 .IP <net/gen/ip_io.h>
 .br
-defines struct nwio_ipconf (\fBnwio_ipconf_t\fP) and
+Defines struct nwio_ipconf (\fBnwio_ipconf_t\fP) and
 struct nwio_ipopt (\fBnwio_ipopt_t\fP)
 .IP <net/gen/ip_hdr.h>
 .br
-defines struct ip_hdr (\fBip_hdr_t\fP)
+Defines struct ip_hdr (\fBip_hdr_t\fP)
 .IP <net/gen/route.h>
 .br
-defines struct nwio_route (\fBnwio_route_t\fP)
+Defines struct nwio_route (\fBnwio_route_t\fP)
 .SS "Types (tcp)"
 .IP <net/gen/tcp.h>
 .br
-defines
+Defines
 .B tcpport_t
 and
 .B Tcpport_t
 for use in prototypes.
 .IP <net/gen/tcp_io.h>
 .br
-defines struct nwio_tcpconf (\fBnwio_tcpconf_t\fP),
+Defines struct nwio_tcpconf (\fBnwio_tcpconf_t\fP),
 struct nwio_tcpcl (\fBnwio_tcpcl_t\fP),
 struct nwio_tcpatt (\fBnwio_tcpatt_t\fP) and
 struct nwio_tcpopt (\fBnwio_tcpopt_t\fP).
 .IP <net/gen/tcp_hdr.h>
 .br
-defines struct tcp_hdr (\fBtcp_hdr_t\fP) and struct tcp_hdropt
+Defines struct tcp_hdr (\fBtcp_hdr_t\fP) and struct tcp_hdropt
 (\fBtcp_hdropt_t\fP).
 .SS "Types (udp)"
 .IP <net/gen/udp.h>
 .br
-defines
+Defines
 .B udpport_t
 and
 .B Udpport_t
 for use in prototypes.
 .IP <net/gen/udp_io.h>
 .br
-defines struct nwio_udpopt (\fBnwio_udpopt_t\fP).
+Defines struct nwio_udpopt (\fBnwio_udpopt_t\fP).
 .IP <net/gen/udp_hdr.h>
 .br
-defines struct udp_hdr (\fBudp_hdr_t\fP) and struct udp_io_hdr
+Defines struct udp_hdr (\fBudp_hdr_t\fP) and struct udp_io_hdr
 (\fBudp_io_hdr_t\fP).
 .SS "Byte Order Conversion"
 All 16-bit and 32-bit quantities in IP headers must be in network byte
@@ -148,7 +216,7 @@ can be used to convert these values to and from the byte order used by
 the host machine.
 .SS "The Internet Checksum"
 The
-.B OneC_sum
+.B oneC_sum
 function (see
 .BR oneC_sum (3))
 is used to calculate the one's complement checksum needed for IP network
@@ -570,7 +638,7 @@ then multiple channels that all have to specify
 .B NWIO_SHARED
 can use the same IP protocol, but incoming packets will
 be delivered to a most one channel.
-.B NWIO_SHARED
+.B NWIO_COPY
 does not impose any restrictions.
 Every channel gets a copy of an incoming packet.
 .PP
@@ -1311,15 +1379,20 @@ int flags;
 but also destroys the channel capability.
 ..
 .SH FILES
-.IP /dev/eth[01] 18n
-First and second raw ethernet.
-.IP /dev/psip[23]
+.IP /dev/eth* \w'/dev/psip*mmm'u
+Raw ethernet.  The numbers in the device names are decimal, so one may see
+names from
+.B eth0
+to
+.BR eth15 .
+
+.IP /dev/psip*
 First and second Pseudo IP network.
-.IP /dev/ip[0123]
+.IP /dev/ip*
 IP devices for two ethernets and two Pseudo IP networks.
-.IP /dev/tcp[0123]
+.IP /dev/tcp*
 TCP devices for same four networks.
-.IP /dev/udp[0123]
+.IP /dev/udp*
 UDP devices.
 .IP "/dev/eth, /dev/psip, /dev/ip, /dev/tcp, /dev/udp"
 Devices for the default network, links to the devices above.
@@ -1330,7 +1403,7 @@ only for pseudo IP.
 .SH "SEE ALSO"
 .BR hton (3),
 .BR oneC_sum (3),
-.BR netdefault (8),
+.BR inet (8),
 .BR boot (8).
 .SH DIAGNOSTICS
 Several errors may be returned by the TCP/IP server.  The error code
@@ -1390,4 +1463,4 @@ A generic error code for extremely weird cases.
 Philip Homburg (philip@cs.vu.nl)
 
 .\"
-.\" $PchId: ip.4,v 1.2 1996/05/07 21:09:41 philip Exp $
+.\" $PchId: ip.4,v 1.4 2001/01/08 19:58:14 philip Exp $

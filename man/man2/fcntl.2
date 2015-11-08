@@ -6,7 +6,7 @@ fcntl \- miscellaneous file descriptor control functions
 .ft B
 #include <fcntl.h>
 
-int fcntl(int \fIfd\fP, int *\fIcmd\fP, \fR[\fP\fIdata\fP\fR]\fP)
+int fcntl(int \fIfd\fP, int \fIcmd\fP, \fR[\fP\fIdata\fP\fR]\fP)
 .ft P
 .fi
 .SH DESCRIPTION
@@ -187,8 +187,8 @@ segment is already locked.
 .SP
 .BI "fcntl(" fd ", F_FREESP, struct flock *" lkp ")"
 .RS
-Free a segment of disk space occupied by the file associated with file
-descriptor
+This Minix-vmd specific call frees a segment of disk space occupied by the
+file associated with file descriptor
 .IR fd .
 The segment is described by the
 .B struct flock
@@ -202,7 +202,7 @@ is zero.  If
 .B l_len
 is nonzero then the file keeps its size, but the freed bytes now read as
 zeros.  (Other than sharing the flock structure, this call has nothing to do
-with locking.)
+with locking.)  (This call is common among UNIX(-like) systems.)
 .RE
 .SP
 .BI "fcntl(" fd ", F_SEEK, u64_t " pos ")"
@@ -256,4 +256,7 @@ file that is not open for writing, etc.
 No locks available, the file system code has run out of internal table
 space.
 .SH AUTHOR
-Kees J. Bot (kjb@cs.vu.nl)
+Kees J. Bot <kjb@cs.vu.nl>
+
+.\"
+.\" $PchId: fcntl.2,v 1.2 2000/08/11 19:39:51 philip Exp $

@@ -7,12 +7,14 @@ s = $i/sys
 h = $i/minix
 b = $i/ibm
 l = $u/lib
+n = $i/net
+g = $n/gen
 
 # Programs, flags, etc.
 CC =	exec cc
 CPP =	$l/cpp
 LD =	$(CC) -.o
-CFLAGS = -m -I$i
+CFLAGS = -I$i
 LDFLAGS = -i
 
 HEAD =	mpx.o
@@ -22,12 +24,12 @@ OBJS =	start.o protect.o klib.o table.o main.o proc.o \
 	console.o i8259.o rs232.o dmp.o misc.o driver.o \
 	drvlib.o floppy.o at_wini.o bios_wini.o esdi_wini.o \
 	xt_wini.o printer.o aha1540.o dp8390.o pty.o \
-	wdeth.o ne2000.o 3c503.o mcd.o sb16_dsp.o sb16_mixer.o \
-	dosfat.o dosfile.o
+	wdeth.o ne2000.o 3c503.o rtl8139.o sb16_dsp.o sb16_mixer.o \
+	fatfile.o dosfile.o rtl8029.o pci.o pci_table.o
 
 # What to make.
 kernel: $(HEAD) $(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $(HEAD) $(OBJS)
+	$(LD) $(LDFLAGS) -o $@ $(HEAD) $(OBJS) -lsys
 	install -S 0 $@
 
 all install:
@@ -39,9 +41,9 @@ clean:
 
 # Dependencies
 a =	kernel.h $h/config.h $h/const.h $h/type.h $h/syslib.h \
-	$s/types.h $i/string.h $i/limits.h $i/errno.h \
-	const.h type.h proto.h glo.h
-d =	driver.h $h/callnr.h $h/com.h $h/partition.h proc.h
+	$s/types.h $i/string.h $i/limits.h $i/errno.h $i/stddef.h \
+	$b/portio.h const.h type.h proto.h glo.h
+d =	driver.h $h/callnr.h $h/com.h $h/partition.h $h/u64.h proc.h
 dl =	drvlib.h $b/partition.h
 
 klib.o: $h/config.h $h/const.h const.h sconst.h protect.h
@@ -65,7 +67,6 @@ console.o:	proc.h
 
 start.o:	$a
 start.o:	$i/stdlib.h
-start.o:	$h/boot.h
 start.o:	protect.h
 
 dmp.o:		$a
@@ -77,7 +78,8 @@ exception.o:	$i/signal.h
 exception.o:	proc.h
 
 driver.o:	$a $d
-driver.o:	$s/ioctl.h
+driver.o:	$h/ioctl.h
+driver.o:	$s/ioc_disk.h
 
 drvlib.o:	$a $d $(dl)
 
@@ -105,7 +107,10 @@ main.o:	$h/com.h
 main.o:	proc.h
 
 memory.o:	$a $d
-memory.o:	$s/ioctl.h
+memory.o:	$h/ioctl.h
+memory.o:	$s/ioc_disk.h
+memory.o:	protect.h
+memory.o:	$b/int86.h
 
 misc.o:	$a
 misc.o:	$i/stdlib.h
@@ -139,28 +144,35 @@ rs232.o:	$i/termios.h
 rs232.o:	$i/signal.h
 rs232.o:	tty.h
 rs232.o:	proc.h
+rs232.o:	const.h
 
 system.o:	$a
+system.o:	$i/stdlib.h
 system.o:	$i/signal.h
 system.o:	$i/unistd.h
 system.o:	$s/sigcontext.h
 system.o:	$s/ptrace.h
-system.o:	$h/boot.h
+system.o:	$h/ioctl.h
+system.o:	$s/svrctl.h
 system.o:	$h/callnr.h
 system.o:	$h/com.h
 system.o:	proc.h
 system.o:	protect.h
+system.o:	assert.h
 
 table.o:	$a
+table.o:	$i/stdlib.h
 table.o:	$i/termios.h
 table.o:	$h/com.h
 table.o:	proc.h
 table.o:	tty.h
+table.o:	$b/int86.h
 
 tty.o:		$a
 tty.o:		$i/termios.h
 tty.o:		$i/sgtty.h
-tty.o:		$s/ioctl.h
+tty.o:		$h/ioctl.h
+tty.o:		$s/ioc_tty.h
 tty.o:		$i/signal.h
 tty.o:		$h/callnr.h
 tty.o:		$h/com.h
@@ -171,65 +183,95 @@ tty.o:		tty.h
 aha1540.o:	$a $d $(dl)
 aha1540.o:	$i/fcntl.h
 aha1540.o:	$s/mtio.h
-aha1540.o:	$s/ioctl.h
+aha1540.o:	$h/ioctl.h
+aha1540.o:	$s/ioc_disk.h
+aha1540.o:	$s/ioc_tape.h
+aha1540.o:	$s/ioc_scsi.h
 
 at_wini.o:	$a $d $(dl)
 
 bios_wini.o:	$a $d $(dl)
+bios_wini.o:	$b/int86.h
 
 esdi_wini.o:	$a $d $(dl)
 
 xt_wini.o:	$a $d $(dl)
 
-mcd.o:	$a $d $(dl)
-mcd.o:	$h/cdrom.h
-mcd.o:	$s/ioctl.h
-
-dosfat.o:	$a $d $(dl)
-dosfat.o:	$i/stdlib.h
-dosfat.o:	assert.h
+fatfile.o:	$a $d $(dl)
+fatfile.o:	$i/stdlib.h
+fatfile.o:	assert.h
 
 dosfile.o:	$a $d $(dl)
+dosfile.o:	$i/stdlib.h
+dosfile.o:	$b/int86.h
 
 dp8390.o:	$a
 dp8390.o:	$i/stdlib.h
 dp8390.o:	$h/com.h
-dp8390.o:	$i/net/hton.h
-dp8390.o:	$i/net/gen/ether.h
-dp8390.o:	$i/net/gen/eth_io.h
+dp8390.o:	$n/hton.h
+dp8390.o:	$g/ether.h
+dp8390.o:	$g/eth_io.h
 dp8390.o:	assert.h
 dp8390.o:	protect.h
 dp8390.o:	dp8390.h
 dp8390.o:	proc.h
 
 wdeth.o:	$a
-wdeth.o:	$i/net/gen/ether.h
-wdeth.o:	$i/net/gen/eth_io.h
+wdeth.o:	$g/ether.h
+wdeth.o:	$g/eth_io.h
 wdeth.o:	assert.h
 wdeth.o:	dp8390.h
 wdeth.o:	wdeth.h
 
 ne2000.o:	$a
-ne2000.o:	$i/net/gen/ether.h
-ne2000.o:	$i/net/gen/eth_io.h
+ne2000.o:	$g/ether.h
+ne2000.o:	$g/eth_io.h
 ne2000.o:	dp8390.h
 ne2000.o:	ne2000.h
 
 3c503.o:	$a
-3c503.o:	$i/net/gen/ether.h
-3c503.o:	$i/net/gen/eth_io.h
+3c503.o:	$g/ether.h
+3c503.o:	$g/eth_io.h
 3c503.o:	dp8390.h
 3c503.o:	3c503.h
+
+rtl8139.o:	$a
+rtl8139.o:	$h/com.h
+rtl8139.o:	$n/hton.h
+rtl8139.o:	$g/ether.h
+rtl8139.o:	$g/eth_io.h
+rtl8139.o:	assert.h
+rtl8139.o:	pci.h
+rtl8139.o:	proc.h
+rtl8139.o:	rtl8139.h
 
 sb16_dsp.o:	$a
 sb16_dsp.o:	$h/com.h
 sb16_dsp.o:	$h/callnr.h
-sb16_dsp.o:	$s/ioctl.h
+sb16_dsp.o:	$h/ioctl.h
+sb16_dsp.o:	$s/ioc_sound.h
 sb16_dsp.o:	sb16.h
 
 sb16_mixer.o:	$a
 sb16_mixer.o:	$h/com.h
 sb16_mixer.o:	$h/callnr.h
-sb16_mixer.o:	$s/ioctl.h
+sb16_mixer.o:	$h/ioctl.h
+sb16_mixer.o:	$s/ioc_sound.h
 sb16_mixer.o:	$h/sound.h
 sb16_mixer.o:	sb16.h
+
+rtl8029.o:	$a
+rtl8029.o:	$s/types.h
+rtl8029.o:	$g/ether.h
+rtl8029.o:	$g/eth_io.h
+
+pci.o:		$a
+pci.o:		assert.h
+pci.o:		pci.h
+pci.o:		pci_amd.h
+pci.o:		pci_intel.h
+pci.o:		pci_via.h
+pci.o:		pci_sis.h
+
+pci_table.o:	$a
+pci_table.o:	pci.h

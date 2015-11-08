@@ -36,6 +36,8 @@ A tour through the Minix directory hierarchy.
 	hosts	TCP/IP hosts database, \fBhosts\fP(5)
 	hosts.equiv
 		Network equivalent hosts, \fBhosts.equiv\fP(5)
+	inet.conf
+		Inet server config file, \fBinet\fP(8)
 	keymap	Keymap for custom keyboard, \fBloadkeys\fP(8)
 	motd	Message of the day, \fBlogin\fP(1)
 	mtab	Mounted file system table, \fBfstab\fP(5)
@@ -47,12 +49,12 @@ A tour through the Minix directory hierarchy.
 		TCP/IP domain name system, \fBresolv.conf\fP(5)
 	services
 		TCP/IP names to services, \fBservices\fP(5)
+	serv.access
+		Internet service access control, \fBserv.access\fP(5)
 	shadow	Shadow password database, \fBpasswd\fP(5)
 	termcap
 		Terminal type descriptions, \fBtermcap\fP(5)
-	ttys	Active terminals, \fBinit\fP(8)
-	ttytype
-		Terminal types, \fBlogin\fP(1)
+	ttytab	Terminals device table, \fBttytab\fP(5)
 	utmp	User login database, \fBlogin\fP(1)
 	...
 .SP
@@ -64,8 +66,16 @@ A tour through the Minix directory hierarchy.
 /usr/	Home directories and more system files
 .SP
 	adm/	System administration files (1,5,8)
+		lastlog
+			Last logins, \fBlogin\fP(1)
+		log
+			Default log file
+		old
+			Last weeks log files
 		wtmp
 			User logins and logouts, \fBlogin\fP(1)
+		*.cache
+			Cached data of some programs
 		...
 .SP
 	ast/	Honorary home directory of Andrew S. Tanenbaum
@@ -91,6 +101,9 @@ A tour through the Minix directory hierarchy.
 		...
 .SP
 	etc/	More system data files, cf /etc (8)
+		rc	Continued system startup, \fBboot\fP(8)
+		daily
+			Daily system cleanup
 		...
 .SP
 	include/
@@ -113,6 +126,9 @@ A tour through the Minix directory hierarchy.
 .SP
 	local/	Local software, cf /usr/
 		bin/	Local utilities
+		etc/	Local data files
+			rc	Local system startup
+			...
 		man/	Local manual pages
 		src/	Local sources
 		...

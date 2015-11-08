@@ -30,7 +30,6 @@ PUBLIC void main()
   phys_clicks text_base;
   vir_clicks text_clicks;
   vir_clicks data_clicks;
-  phys_bytes phys_b;
   reg_t ktsb;			/* kernel task stack base */
   struct memory *memp;
   struct tasktab *ttp;
@@ -46,7 +45,6 @@ PUBLIC void main()
    * Set up mappings for proc_addr() and proc_number() macros.
    */
   for (rp = BEG_PROC_ADDR, t = -NR_TASKS; rp < END_PROC_ADDR; ++rp, ++t) {
-	rp->p_flags = P_SLOT_FREE;
 	rp->p_nr = t;		/* proc number from ptr */
         (pproc_addr + NR_TASKS)[t] = rp;        /* proc ptr from number */
   }
@@ -79,8 +77,10 @@ PUBLIC void main()
 		text_base = code_base >> CLICK_SHIFT;
 					/* tasks are all in the kernel */
 		hdrindex = 0;		/* and use the first a.out header */
+		rp->p_priority = PPRI_TASK;
 	} else {
 		hdrindex = 1 + t;	/* MM, FS, INIT follow the kernel */
+		rp->p_priority = t < LOW_USER ? PPRI_SERVER : PPRI_USER;
 	}
 
 	/* The bootstrap loader has created an array of the a.out headers at
@@ -130,6 +130,7 @@ PUBLIC void main()
 
   proc[NR_TASKS+INIT_PROC_NR].p_pid = 1;/* INIT of course has pid 1 */
   bill_ptr = proc_addr(IDLE);		/* it has to point somewhere */
+  proc_addr(IDLE)->p_priority = PPRI_IDLE;
   lock_pick_proc();
 
   /* Now go to the assembly code to start running the current process. */
@@ -150,7 +151,7 @@ int n;
  * kind of stuck.
  */
 
-  if (*s != 0) {
+  if (s != NULL) {
 	printf("\nKernel panic: %s",s);
 	if (n != NO_NUM) printf(" %d", n);
 	printf("\n");

@@ -18,7 +18,7 @@
  *
  * The file contains one entry point:
  *
- *   dsp_task:	main entry when system is brought up
+ *   sb16_task:	main entry when system is brought up
  *
  *  May 20 1995			Author: Michel R. Prevenier 
  */
@@ -27,14 +27,10 @@
 #include "kernel.h"
 #include <minix/com.h> 
 #include <minix/callnr.h> 
-#include <sys/ioctl.h>
-#if __minix_vmd
-#include "proc.h"
-#include "config.h"
-#endif
+#include <sys/ioc_sound.h>
 #include "sb16.h"
 
-#if ENABLE_SB_AUDIO
+#if ENABLE_SB16
 
 /* prototypes */
 FORWARD _PROTOTYPE( void init_buffer, (void));
@@ -56,9 +52,6 @@ FORWARD _PROTOTYPE( void dsp_dma_setup, (phys_bytes address, int count));
 FORWARD _PROTOTYPE( void dsp_setup, (void));
 
 /* globals */
-#if __minix_vmd
-PRIVATE int DspTasknr = ANY;
-#endif
 PRIVATE int DspVersion[2]; 
 PRIVATE unsigned int DspStereo = DEFAULT_STEREO;
 PRIVATE unsigned int DspSpeed = DEFAULT_SPEED; 
@@ -77,16 +70,12 @@ PRIVATE phys_bytes DmaPhys;
 
 
 /*=========================================================================*
- *				dsp_task				   *
+ *				sb16_task				   *
  *=========================================================================*/
-PUBLIC void dsp_task()
+PUBLIC void sb16_task()
 {
   message mess;
   int err, caller, proc_nr;
-
-#if __minix_vmd
-  DspTasknr = proc_number(proc_ptr);
-#endif
 
   /* initialize the DMA buffer */
   init_buffer();
@@ -272,13 +261,13 @@ PRIVATE int dsp_init()
 
   for (i = 1000; i; i--)
   {
-    if (in_byte (DSP_DATA_AVL) & 0x80)
+    if (inb (DSP_DATA_AVL) & 0x80)
     {		
       if (DspVersion[0] == 0)
-        DspVersion[0] = in_byte (DSP_READ);
+        DspVersion[0] = inb (DSP_READ);
       else
       {
-        DspVersion[1] = in_byte (DSP_READ);
+        DspVersion[1] = inb (DSP_READ);
         break;
       }
     }
@@ -326,14 +315,10 @@ int irq;
   }
 
   /* Send interrupt to audio task and enable again */
-#if __minix_vmd
-  interrupt(DspTasknr);
-#else
-  interrupt(AUDIO);
-#endif
+  interrupt(SB16);
 
   /* Acknowledge the interrupt on the DSP */
-  (void) in_byte((DspBits == 8 ? DSP_DATA_AVL : DSP_DATA16_AVL));
+  (void) inb((DspBits == 8 ? DSP_DATA_AVL : DSP_DATA16_AVL));
 
   return 1;
 }
@@ -349,9 +334,9 @@ int value;
 
   for (i = 0; i < SB_TIMEOUT; i++)
   {
-    if ((in_byte (DSP_STATUS) & 0x80) == 0)
+    if ((inb (DSP_STATUS) & 0x80) == 0)
     {
-      out_byte (DSP_COMMAND, value);
+      outb (DSP_COMMAND, value);
       return OK;
     }
   }
@@ -368,13 +353,13 @@ PRIVATE int dsp_reset(void)
 {
   int i;
 
-  out_byte (DSP_RESET, 1);
+  outb (DSP_RESET, 1);
   for(i =0; i<1000; i++); /* wait a while */
-  out_byte (DSP_RESET, 0);
+  outb (DSP_RESET, 0);
 
-  for (i = 0; i < 1000 && !(in_byte (DSP_DATA_AVL) & 0x80); i++);	
+  for (i = 0; i < 1000 && !(inb (DSP_DATA_AVL) & 0x80); i++);	
 
-  if (in_byte (DSP_READ) != 0xAA) return EIO; /* No SoundBlaster */			
+  if (inb (DSP_READ) != 0xAA) return EIO; /* No SoundBlaster */			
 
   DmaBusy = 0;
   DmaDone = 1;
@@ -505,19 +490,19 @@ int count;
     count--;     
 
     lock();
-    out_byte(DMA8_MASK, SB_DMA_8 | 0x04);      /* Disable DMA channel */
-    out_byte(DMA8_CLEAR, 0x00);		       /* Clear flip flop */
+    outb(DMA8_MASK, SB_DMA_8 | 0x04);      /* Disable DMA channel */
+    outb(DMA8_CLEAR, 0x00);		   /* Clear flip flop */
 
     /* set DMA mode */
-    out_byte(DMA8_MODE, 
+    outb(DMA8_MODE, 
                (DmaMode == DEV_WRITE ? DMA8_AUTO_PLAY : DMA8_AUTO_REC)); 
 
-    out_byte(DMA8_ADDR, address >>  0);        /* Low_byte of address */
-    out_byte(DMA8_ADDR, address >>  8);        /* High byte of address */
-    out_byte(DMA8_PAGE, address >> 16);        /* 64K page number */
-    out_byte(DMA8_COUNT, count >> 0);          /* Low byte of count */
-    out_byte(DMA8_COUNT, count >> 8);          /* High byte of count */
-    out_byte(DMA8_MASK, SB_DMA_8);	       /* Enable DMA channel */
+    outb(DMA8_ADDR, address >>  0);        /* Low_byte of address */
+    outb(DMA8_ADDR, address >>  8);        /* High byte of address */
+    outb(DMA8_PAGE, address >> 16);        /* 64K page number */
+    outb(DMA8_COUNT, count >> 0);          /* Low byte of count */
+    outb(DMA8_COUNT, count >> 8);          /* High byte of count */
+    outb(DMA8_MASK, SB_DMA_8);	           /* Enable DMA channel */
     unlock();
   }
   else  /* 16 bit sound */
@@ -525,19 +510,19 @@ int count;
     count-= 2;
 
     lock();
-    out_byte(DMA16_MASK, (SB_DMA_16 & 3) | 0x04); /* Disable DMA channel */
-    out_byte(DMA16_CLEAR, 0x00);                  /* Clear flip flop */
+    outb(DMA16_MASK, (SB_DMA_16 & 3) | 0x04); /* Disable DMA channel */
+    outb(DMA16_CLEAR, 0x00);                  /* Clear flip flop */
 
     /* Set dma mode */
-    out_byte(DMA16_MODE, 
+    outb(DMA16_MODE, 
                (DmaMode == DEV_WRITE ? DMA16_AUTO_PLAY : DMA16_AUTO_REC));        
 
-    out_byte(DMA16_ADDR, (address >> 1) & 0xFF);  /* Low_byte of address */
-    out_byte(DMA16_ADDR, (address >> 9) & 0xFF);  /* High byte of address */
-    out_byte(DMA16_PAGE, (address >> 16) & 0xFE); /* 128K page number */
-    out_byte(DMA16_COUNT, count >> 1);            /* Low byte of count */
-    out_byte(DMA16_COUNT, count >> 9);            /* High byte of count */
-    out_byte(DMA16_MASK, SB_DMA_16 & 3);          /* Enable DMA channel */
+    outb(DMA16_ADDR, (address >> 1) & 0xFF);  /* Low_byte of address */
+    outb(DMA16_ADDR, (address >> 9) & 0xFF);  /* High byte of address */
+    outb(DMA16_PAGE, (address >> 16) & 0xFE); /* 128K page number */
+    outb(DMA16_COUNT, count >> 1);            /* Low byte of count */
+    outb(DMA16_COUNT, count >> 9);            /* High byte of count */
+    outb(DMA16_MASK, SB_DMA_16 & 3);          /* Enable DMA channel */
     unlock();
   }
 }
@@ -690,4 +675,4 @@ message *m_ptr;
 
   return(DspFragmentSize);
 }
-#endif /* ENABLE_AUDIO */
+#endif /* ENABLE_SB16 */

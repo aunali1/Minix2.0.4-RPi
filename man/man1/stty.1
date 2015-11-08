@@ -53,6 +53,7 @@ stty \- set terminal parameters
 .RB [ \- ] echok
 .RB [ \- ] echonl
 .RB [ \- ] noflsh
+.RB [ \- ] tostop
 .RB [ \- ] lflusho
 .BR eof =\fIc
 .BR eol =\fIc
@@ -72,6 +73,10 @@ stty \- set terminal parameters
 .B rows
 .I n
 .B cols
+.I n
+.B xpixels
+.I n
+.B ypixels
 .I n
 .B cooked
 .B raw
@@ -146,13 +151,15 @@ The
 .B MIN
 and
 .B TIME
-value, and the number of rows and columns of the window can also be set using
-one of the keywords
+value, the number of rows and columns, and the xpixels and ypixels of the
+window can also be set using one of the keywords
 .BR min ,
 .BR time ,
-.BR rows
-or
+.BR rows ,
 .BR cols ,
+.BR xpixels
+or
+.BR ypixels ,
 followed by a decimal number that is the value of the setting.
 .PP
 .B Stty
@@ -226,9 +233,11 @@ command to set the attributes to match an attached RS232 terminal or modem.
 The
 .BR cooked ,
 .BR raw ,
-.BR rows
+.BR rows ,
+.BR cols ,
+.BR xpixels
 and
-.BR cols
+.BR ypixels
 keywords are Minix additions beyond the keywords defined by POSIX.
 .B Rows
 and
@@ -238,4 +247,4 @@ There are more Minix specific flags that match the Minix specific attributes
 described in
 .BR tty (4).
 .SH AUTHOR
-Kees J. Bot (kjb@cs.vu.nl)
+Kees J. Bot <kjb@cs.vu.nl>

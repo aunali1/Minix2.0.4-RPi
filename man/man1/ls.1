@@ -2,7 +2,7 @@
 .SH NAME
 ls \- list the contents of a directory
 .SH SYNOPSIS
-\fBls\fP [\fB\-acdfgilqrstu1ACDFLMRTX\fP] [\fIname\fP...]
+\fBls\fP [\fB\-acdfghilpqrstu1ACDFLMRTX\fP] [\fIname\fP...]
 .SH DESCRIPTION
 For each file argument, list it.  For each directory argument, list its
 contents.  The current working directory is listed when no files are named.
@@ -58,6 +58,9 @@ can't be implemented portably).
 Suppress the owner name on a long listing (implies
 .BR \-l ).
 .TP
+.B \-h
+Show file sizes in kilo, mega or gigabytes.
+.TP
 .B \-i
 I-node number printed in the first column.
 .TP
@@ -68,6 +71,9 @@ uses columns in a wide enough window!)
 .TP
 .B \-n
 Print numerical user and group id's.
+.TP
+.B \-p
+Mark directories with a '\fB/\fP'.
 .TP
 .B \-q
 Print nongraphic characters as '\fB?\fP' (default on terminals).
@@ -153,6 +159,6 @@ and
 .B -X
 flags are not found on other
 .B ls
-implementations.  (They have there own nonstandard flags.)
+implementations.  (They have their own nonstandard flags.)
 .SH AUTHOR
-Kees J. Bot (kjb@cs.vu.nl)
+Kees J. Bot <kjb@cs.vu.nl>

@@ -69,6 +69,12 @@ pronounced as
 .B 1024
 is more than enough to contain the working set of one active user.
 .TP
+.SB NR_CTRLRS
+Number of tasks used for disk or tape controllers.  By default 2, maximum 4.
+You need a controller task for each device class to be handled through a
+.BI /dev/c n "*"
+set of devices.
+.TP
 .SB ENABLE_CACHE2
 If set to 1 allows the RAM disk to be used as a second level file system
 cache.  Any block that is evicted from the normal cache is both written to
@@ -82,7 +88,7 @@ Turn it on and set the boot environment variable
 to
 .B 512
 if you have the memory.  That's enough to contain the working set of
-one active user, and also the maximum FS can handle.
+one active user, and is also the maximum FS can handle.
 .BR 386 :
 The installation scripts sets
 .B ramsize
@@ -100,10 +106,11 @@ arrangement.
 .TP
 .SB ENABLE_AT_WINI
 Enables the AT or IDE disk driver.  (The IDE interface grew out of the old
-AT disk interface.)  Any run of the mill PC needs this driver.  (Several of
-these "wini" drivers may be enabled, but only one may run as chosen by the
-.B hd
-boot variable.)
+AT disk interface.)  Any run of the mill PC needs this driver.  You need to
+assign a driver like this one to a controller task using one of the
+.BI c n
+boot variables.  See
+.BR boot (8).
 .TP
 .SB ENABLE_BIOS_WINI
 Enables the BIOS disk driver.  The BIOS driver uses the system BIOS to read
@@ -124,24 +131,22 @@ disks.  In real mode it is best to use the BIOS driver.
 .SB ENABLE_AHA1540_SCSI
 Enables the Adaptec 1540 series SCSI driver.
 .TP
-.SB ENABLE_MITSUMI_CDROM
-Enables the Mitsumi CD-ROM driver.  (Proprietary Mitsumi interface, almost
-extinct.  There is no support for IDE/ATAPI CD-ROM yet.)
-.TP
 .SB ENABLE_DOSFILE
 Enable the "DOS file as disk" driver that is used when Minix is run from
 MS-DOS to access a large file as a disk.
 .TP
-.SB ENABLE_DOSFAT
-Enable the "DOS file as disk" driver that interprets a DOS FAT file system
+.SB ENABLE_FATFILE
+Enable the "FAT file as disk" driver that interprets a FAT file system
 to find a large file to use as a disk.  This driver combined with a fast
 native Minix disk driver is a better choice then the previous driver.  (And
-it works when Minix is not started from MS-DOS.)  See
-.BR dosd (4)
-for more comments on these two drivers.
+it works when Minix is not started from MS-DOS.)  This is the last driver
+that needs to be assigned to a controller task.
 .TP
-.SB ENABLE_SB_AUDIO
+.SB ENABLE_SB16
 Enable the Soundblaster-16 audio driver.
+.TP
+.SB ENABLE_PRINTER
+Enable the Printer driver.
 .TP
 .SB DMA_SECTORS
 The size of the DMA buffer for drivers that use DMA or other drivers that
@@ -169,13 +174,16 @@ virtual consoles, for VGA you can have
 It is best to choose one less to leave some video memory to keep text
 scrolling fast.  You really should read
 .BR console (4)
-on this.
+on this.  Note also the
+.B console
+boot variable, you can use it to put more characters on the screen, at
+the cost of video memory.
 .TP
-.SB ENABLE_NETWORKING
-Master switch to enable networking support.  It causes the network server,
-.BR inet ,
-to be compiled and added to the kernel image, and it enables the network
-driver in the kernel.  See
+.SB ENABLE_DP8390
+Master switch to enable the network drivers.  They are required by the
+network server,
+.BR inet .
+See
 .BR boot (8)
 for information on configuring network support.
 .TP
@@ -236,16 +244,16 @@ this table has run out.
 .ti 2m
 .B kernel/dosfile.c
 .ti 2m
-.B kernel/dosfat.c
+.B kernel/fatfile.c
 .br
 The number of disks each of these drivers can handle is specified by:
 .TP
 .B MAX_DRIVES
 This parameter is set to
 .B 4
-for the BIOS and DOS "file" drivers, and to
+for the BIOS and "DOS file" drivers, and to
 .B 2
-for the DOS "FAT" driver.  It can be set as high as you need to allow for
+for the "FAT file" driver.  It can be set as high as you need to allow for
 more disks, or files as disks.  (The "FAT" driver needs quite some memory per
 disk, which is why it by default only allows 2 disks.)  You will need to run
 .BR MAKEDEV (8)
@@ -253,9 +261,23 @@ to create the extra disk devices in
 .BR /dev/ .
 .PP
 .ti 2m
+.B inet/inet_config.h
+.br
+The maximum number of TCP/IP networks is:
+.TP
+.B IP_PORT_MAX
+Sets the maximum number of networks that can be defined in
+.BR /etc/inet.conf .
+.BR 8086 ,
+.BR 286 :
+By default 2.
+.BR 386 :
+By default 4.
+.PP
+.ti 2m
 .B inet/buf.c
 .br
-The number of 512 byte buffers allocated for the TCP/IP server is:
+The number of 512 byte buffers allocated for data within the TCP/IP server is:
 .TP
 .B BUF512_NR
 These buffers are a shared resource used by the server for any data it wants
@@ -285,12 +307,28 @@ The default of
 .B 128
 can be increased to any value you like, but
 .B 512
-seems to be more than enough.  Minix-vmd uses 512 by default, and it has yet
-to run out.
+seems to be more than enough.  Minix-vmd uses 512 by default, and it seems
+happy that way.
 .SH "SEE ALSO"
-.BR hd (4),
-.BR dosd (4),
+.BR controller (4),
 .BR usage (8),
-.BR boot (8).
+.BR boot (8),
+.BR MAKEDEV (8).
+.SH NOTES
+Associated with drivers there are device files to access the devices
+controlled by the drivers that may have to be created.  Let's simplify this
+sentence:  Type
+.BR "ls /dev" ,
+note that there are only
+.B c0*
+and
+.B c1*
+devices, and only for two disks each.  Some devices, like the audio devices,
+are not even present.  So if you enable a driver, or increase some limits, you
+also need to use
+.BR MAKEDEV (8)
+in
+.B /dev
+to allow programs to talk to the drivers.
 .SH AUTHOR
 Kees J. Bot (kjb@cs.vu.nl)

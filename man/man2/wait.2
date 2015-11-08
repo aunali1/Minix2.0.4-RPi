@@ -46,9 +46,8 @@ A more precise definition of the
 .I status
 word is given in
 .RI < sys/wait.h >.
-If
-.B wait
-can called with a null pointer argument to indicate that no status need
+.B Wait
+can be called with a null pointer argument to indicate that no status need
 be returned.
 .PP
 .B Waitpid
@@ -66,7 +65,7 @@ there are no processes that wish to report status (WNOHANG),
 and/or that children of the current process that are stopped
 due to a SIGTTIN, SIGTTOU, SIGTSTP, or SIGSTOP signal should also have
 their status reported (WUNTRACED).  (Job control is not implemented for
-Minix, but these symbold and signals are.)
+Minix, but these symbols and signals are.)
 .PP
 When the WNOHANG option is specified and no processes
 wish to report status, 
@@ -132,9 +131,13 @@ is returned to the calling process.  Otherwise, a value of \-1
 is returned and \fBerrno\fP is set to indicate the error.
 .PP
 .B Waitpid
-returns \-1 if there are no children not previously waited for, if
-the process that it wants to wait for doesn't exist, or if
-WNOHANG is specified and there are no stopped or exited children.
+returns \-1 if there are no children not previously waited for or if
+the process that it wants to wait for doesn't exist.
+.PP
+.B Waitpid
+returns 0 if WNOHANG is specified and there are no stopped or exited
+children.  (Under other implementations it may return \-1 instead.  Portable
+code should test for both possibilities.)
 .SH ERRORS
 .B Wait
 will fail and return immediately if one or more of the following
@@ -149,7 +152,10 @@ The \fIstatus\fP argument points to an illegal address.
 .TP 15
 [EAGAIN]
 .B Waitpid
-is called with the WNOHANG option and no child has exited yet.
+is called with the WNOHANG option and no child has exited yet.  (Not under
+Minix, it'll return 0 in this case and leave
+.B errno
+alone.)
 .SH "SEE ALSO"
 .BR execve (2),
 .BR exit (2),

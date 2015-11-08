@@ -24,6 +24,7 @@ rl_ttyset(Reset)
 
 	new = old;
 	new.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
+	new.c_iflag &= ~(ICRNL);
 	new.c_cc[VMIN] = 1;
 	new.c_cc[VTIME] = 0;
 	(void)tcsetattr(0, TCSADRAIN, &new);
@@ -113,3 +114,7 @@ rl_add_slash(path, p)
     if (stat(path, &Sb) >= 0)
 	(void)strcat(p, S_ISDIR(Sb.st_mode) ? "/" : " ");
 }
+
+/*
+ * $PchId: sysunix.c,v 1.4 1996/02/22 21:16:56 philip Exp $
+ */

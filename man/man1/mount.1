@@ -2,7 +2,9 @@
 .SH NAME
 mount \- mount a file system
 .SH SYNOPSIS
-\fBmount \fIspecial \fIfile\fR [\fB\-r\fR]\fR
+\fBmount [\fB\-r\fR] \fIspecial \fIfile\fR
+.br
+\fBmount [\fB\-s\fR] \fIswapfile\fR
 .br
 .de FL
 .TP
@@ -16,6 +18,7 @@ mount \- mount a file system
 ..
 .SH OPTIONS
 .FL "\-r" "File system is mounted read-only"
+.FL "\-s" "Mount swap space"
 .SH EXAMPLES
 .EX "mount /dev/fd1 /user" "Mount diskette 1 on \fI/user\fP"
 .SH DESCRIPTION
@@ -27,10 +30,15 @@ can be accessed as
 after the mount.
 When the file system is no longer needed, it must be unmounted before being
 removed from the drive.
+.PP
+With the
+.B \-s
+flag a device or file is mounted as swap space.
 .SH "SEE ALSO"
 .BR df (1),
 .BR mkfs (1),
 .BR fsck (1),
+.BR mkswap (8),
 .BR umount (1),
 .BR mount (2),
 .BR fstab (5).

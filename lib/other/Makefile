@@ -13,13 +13,14 @@ OBJECTS	= \
 	$(LIBRARY)(_brk.o) \
 	$(LIBRARY)(_reboot.o) \
 	$(LIBRARY)(_seekdir.o) \
+	$(LIBRARY)(_svrctl.o) \
 	$(LIBRARY)(asynchio.o) \
+	$(LIBRARY)(configfile.o) \
 	$(LIBRARY)(crypt.o) \
 	$(LIBRARY)(ctermid.o) \
 	$(LIBRARY)(cuserid.o) \
 	$(LIBRARY)(environ.o) \
 	$(LIBRARY)(errno.o) \
-	$(LIBRARY)(execlp.o) \
 	$(LIBRARY)(fdopen.o) \
 	$(LIBRARY)(ffs.o) \
 	$(LIBRARY)(fslib.o) \
@@ -42,11 +43,8 @@ OBJECTS	= \
 	$(LIBRARY)(nlist.o) \
 	$(LIBRARY)(peekpoke.o) \
 	$(LIBRARY)(popen.o) \
-	$(LIBRARY)(printk.o) \
 	$(LIBRARY)(putenv.o) \
 	$(LIBRARY)(putw.o) \
-	$(LIBRARY)(regexp.o) \
-	$(LIBRARY)(regsub.o) \
 	$(LIBRARY)(stderr.o) \
 	$(LIBRARY)(swab.o) \
 	$(LIBRARY)(syscall.o) \
@@ -55,6 +53,8 @@ OBJECTS	= \
 	$(LIBRARY)(termcap.o) \
 	$(LIBRARY)(ttyname.o) \
 	$(LIBRARY)(ttyslot.o) \
+	$(LIBRARY)(v8regexp.o) \
+	$(LIBRARY)(v8regsub.o) \
 
 $(LIBRARY):	$(OBJECTS)
 	aal cr $@ *.o
@@ -69,6 +69,9 @@ $(LIBRARY)(_reboot.o):	_reboot.c
 $(LIBRARY)(_seekdir.o):	_seekdir.c
 	$(CC1) _seekdir.c
 
+$(LIBRARY)(_svrctl.o):	_svrctl.c
+	$(CC1) _svrctl.c
+
 $(LIBRARY)(asynchio.o):	asynchio.c
 	$(CC1) asynchio.c
 
@@ -80,6 +83,9 @@ $(LIBRARY)(bcopy.o):	bcopy.c
 
 $(LIBRARY)(bzero.o):	bzero.c
 	$(CC1) bzero.c
+
+$(LIBRARY)(configfile.o):	configfile.c
+	$(CC1) configfile.c
 
 $(LIBRARY)(crypt.o):	crypt.c
 	$(CC1) crypt.c
@@ -95,9 +101,6 @@ $(LIBRARY)(environ.o):	environ.c
 
 $(LIBRARY)(errno.o):	errno.c
 	$(CC1) errno.c
-
-$(LIBRARY)(execlp.o):	execlp.c
-	$(CC1) execlp.c
 
 $(LIBRARY)(fdopen.o):	fdopen.c
 	$(CC1) fdopen.c
@@ -168,20 +171,11 @@ $(LIBRARY)(peekpoke.o):	peekpoke.c
 $(LIBRARY)(popen.o):	popen.c
 	$(CC1) popen.c
 
-$(LIBRARY)(printk.o):	printk.c
-	$(CC1) printk.c
-
 $(LIBRARY)(putenv.o):	putenv.c
 	$(CC1) putenv.c
 
 $(LIBRARY)(putw.o):	putw.c
 	$(CC1) putw.c
-
-$(LIBRARY)(regexp.o):	regexp.c
-	$(CC1) regexp.c
-
-$(LIBRARY)(regsub.o):	regsub.c
-	$(CC1) regsub.c
 
 $(LIBRARY)(rindex.o):	rindex.c
 	$(CC1) rindex.c
@@ -212,3 +206,9 @@ $(LIBRARY)(ttyname.o):	ttyname.c
 
 $(LIBRARY)(ttyslot.o):	ttyslot.c
 	$(CC1) ttyslot.c
+
+$(LIBRARY)(v8regexp.o):	v8regexp.c
+	$(CC1) v8regexp.c
+
+$(LIBRARY)(v8regsub.o):	v8regsub.c
+	$(CC1) v8regsub.c

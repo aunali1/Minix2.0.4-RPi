@@ -51,9 +51,6 @@
 #include "../../fs/inode.h"
 #include "../../fs/type.h"
 #include <minix/fslib.h>
-
-#undef printf			/* defined as printk in "../fs/const.h" */
-
 #include <stdio.h>
 
 #define BITSHIFT	  4	/* = log2(#bits(int)) */
@@ -746,7 +743,7 @@ void chkilist()
 					 INODE_SIZE);
 		}
 	}
-  while (++ino <= sb.s_ninodes);
+  while (++ino <= sb.s_ninodes && ino != 0);
   printf("\n");
 }
 
@@ -790,7 +787,7 @@ void chkcount()
 {
   register ino_t ino;
 
-  for (ino = 1; ino <= sb.s_ninodes; ino++)
+  for (ino = 1; ino <= sb.s_ninodes && ino != 0; ino++)
 	if (count[ino] != 0) counterror(ino);
   if (!firstcnterr) printf("\n");
 }
@@ -997,7 +994,7 @@ dir_struct *dp;
 	}
 	return(1);
   }
-  if ((unsigned) count[dp->d_inum] == LINK_MAX) {
+  if ((unsigned) count[dp->d_inum] == SHRT_MAX) {
 	printf("too many links to ino %u\n", dp->d_inum);
 	printf("discovered at entry '");
 	printname(dp->d_name);
@@ -1332,11 +1329,11 @@ d_inode *ip;
   }
   nfreeinode--;
   setbit(imap, (bit_nr) ino);
-  if ((unsigned) ip->i_nlinks > LINK_MAX) {
+  if ((unsigned) ip->i_nlinks > SHRT_MAX) {
 	printf("link count too big in ");
 	printpath(1, 0);
 	printf("cnt = %u)\n", (unsigned) ip->i_nlinks);
-	count[ino] -= LINK_MAX;
+	count[ino] -= SHRT_MAX;
 	setbit(spec_imap, (bit_nr) ino);
   } else {
 	count[ino] -= (unsigned) ip->i_nlinks;

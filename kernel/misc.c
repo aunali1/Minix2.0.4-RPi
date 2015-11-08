@@ -12,9 +12,13 @@
 
 #if (CHIP == INTEL)
 
-/* In real mode only 1M can be addressed, and in 16-bit protected mode 16M. */
-#define MAX_86ADDR	0x00100000L
-#define MAX_286ADDR	0x01000000L
+/* In real mode only 1M can be addressed, and in 16-bit protected we can go
+ * no further than we can count in clicks.  (The 286 is further limited by
+ * its 24 bit address bus, but we can assume in that case that no more than
+ * 16M memory is reported by the BIOS.)
+ */
+#define MAX_REAL	0x00100000L
+#define MAX_16BIT	(0xFFF0L << CLICK_SHIFT)
 
 /*=========================================================================*
  *				mem_init				   *
@@ -43,7 +47,7 @@ PUBLIC void mem_init()
 	env_parse(env, fmt, 2*i+1, &size, 0L, LONG_MAX);
 	limit = base + size;
 #if _WORD_SIZE == 2
-	max_address = protected_mode ? MAX_286ADDR : MAX_86ADDR;
+	max_address = protected_mode ? MAX_16BIT : MAX_REAL;
 	if (limit > max_address) limit = max_address;
 #endif
 	base = (base + CLICK_SIZE-1) & ~(long)(CLICK_SIZE-1);
@@ -55,6 +59,8 @@ PUBLIC void mem_init()
   }
 }
 #endif /* (CHIP == INTEL) */
+
+PRIVATE char PUNCT[] = ":,;.";
 
 /*=========================================================================*
  *				env_parse				   *
@@ -70,19 +76,20 @@ long min, max;		/* minimum and maximum values for the parameter */
  * Panic if the parsing fails.  Return EP_UNSET if the environment variable
  * is not set, EP_OFF if it is set to "off", EP_ON if set to "on" or a
  * field is left blank, or EP_SET if a field is given (return value through
- * *param).  Commas and colons may be used in the environment and format
- * string, fields in the environment string may be empty, and punctuation
- * may be missing to skip fields.  The format string contains characters
- * 'd', 'o', 'x' and 'c' to indicate that 10, 8, 16, or 0 is used as the
- * last argument to strtol.  If the format string contains something like "\4"
- * then the string is repeated at 4 characters left.
+ * *param).  Punctuation may be used in the environment and format string,
+ * fields in the environment string may be empty, and punctuation may be
+ * missing to skip fields.  The format string contains characters 'd', 'o',
+ * 'x' and 'c' to indicate that 10, 8, 16, or 0 is used as the last argument
+ * to strtol().  A '*' means that a field should be skipped.  If the format
+ * string contains something like "\4" then the string is repeated 4 characters
+ * to the left.
  */
 
   char *val, *end;
   long newpar;
   int i = 0, radix, r;
 
-  if ((val = k_getenv(env)) == NIL_PTR) return(EP_UNSET);
+  if ((val = getenv(env)) == NIL_PTR) return(EP_UNSET);
   if (strcmp(val, "off") == 0) return(EP_OFF);
   if (strcmp(val, "on") == 0) return(EP_ON);
 
@@ -94,24 +101,33 @@ long min, max;		/* minimum and maximum values for the parameter */
 
 	if (*fmt == 0) break;		/* too many values */
 
-	if (*val == ',' || *val == ':') {
+	if (strchr(PUNCT, *val) != NULL) {
 		/* Time to go to the next field. */
-		if (*fmt == ',' || *fmt == ':') i++;
+		if (strchr(PUNCT, *fmt) != NULL) i++;
 		if (*fmt++ == *val) val++;
 		if (*fmt < 32) fmt -= *fmt;	/* step back? */
 	} else {
 		/* Environment contains a value, get it. */
 		switch (*fmt) {
+		case '*':	radix =   -1;	break;
 		case 'd':	radix =   10;	break;
 		case 'o':	radix =  010;	break;
 		case 'x':	radix = 0x10;	break;
 		case 'c':	radix =    0;	break;
 		default:	goto badenv;
 		}
-		newpar = strtol(val, &end, radix);
+		
+		if (radix < 0) {
+			/* Skip. */
+			while (strchr(PUNCT, *val) == NULL) val++;
+			continue;
+		} else {
+			/* A number. */
+			newpar = strtol(val, &end, radix);
 
-		if (end == val) break;	/* not a number */
-		val = end;
+			if (end == val) break;	/* not a number */
+			val = end;
+		}
 
 		if (i == field) {
 			/* The field requested. */
@@ -122,12 +138,41 @@ long min, max;		/* minimum and maximum values for the parameter */
 	}
   }
 badenv:
-  printf("Bad environment setting: '%s = %s'\n", env, k_getenv(env));
+  env_panic(env);
+}
+
+/*=========================================================================*
+ *				env_panic				   *
+ *=========================================================================*/
+PUBLIC void env_panic(env)
+char *env;		/* environment variable whose value is bogus */
+{
+  printf("Bad environment setting: '%s = %s'\n", env, getenv(env));
   panic("", NO_NUM);
   /*NOTREACHED*/
 }
 
-#if DEBUG
+/*=========================================================================*
+ *				env_prefix				   *
+ *=========================================================================*/
+PUBLIC int env_prefix(env, prefix)
+char *env;		/* environment variable to inspect */
+char *prefix;		/* prefix to test for */
+{
+/* An environment setting may be prefixed by a word, usually "pci".  Return
+ * true if a given prefix is used.
+ */
+  char *val;
+  size_t n;
+
+  val = getenv(env);
+  n = strlen(prefix);
+  return(val != NIL_PTR
+	&& strncmp(val, prefix, n) == 0
+	&& strchr(PUNCT, val[n]) != NULL);
+}
+
+#if !NDEBUG
 /*=========================================================================*
  *				bad_assertion				   *
  *=========================================================================*/
@@ -154,4 +199,4 @@ int rhs;
 	file, line, lhs, what, rhs);
   panic(NULL, NO_NUM);
 }
-#endif /* DEBUG */
+#endif /* !NDEBUG */

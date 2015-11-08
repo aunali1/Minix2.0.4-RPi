@@ -86,11 +86,13 @@ int task;			/* number of task to be started */
 	unlock();
 	return;
   }
+  switching = TRUE;
 
   /* If task is not waiting for an interrupt, record the blockage. */
   if ( (rp->p_flags & (RECEIVING | SENDING)) != RECEIVING ||
       !isrxhardware(rp->p_getfrom)) {
 	rp->p_int_blocked = TRUE;
+	switching = FALSE;
 	return;
   }
 
@@ -104,15 +106,8 @@ int task;			/* number of task to be started */
   rp->p_flags &= ~RECEIVING;
   rp->p_int_blocked = FALSE;
 
-   /* Make rp ready and run it unless a task is already running.  This is
-    * ready(rp) in-line for speed.
-    */
-  if (rdy_head[TASK_Q] != NIL_PROC)
-	rdy_tail[TASK_Q]->p_nextready = rp;
-  else
-	proc_ptr = rdy_head[TASK_Q] = rp;
-  rdy_tail[TASK_Q] = rp;
-  rp->p_nextready = NIL_PROC;
+  ready(rp);
+  switching = FALSE;
 }
 
 /*===========================================================================*
@@ -133,7 +128,7 @@ message *m_ptr;			/* pointer to message */
   int n;
 
   /* Check for bad system call parameters. */
-  if (!isoksrc_dest(src_dest)) return(E_BAD_SRC);
+  if (!isoksrc_dest(src_dest)) return(E_BAD_DEST);
   rp = proc_ptr;
 
   if (isuserp(rp) && function != BOTH) return(E_NO_PERM);
@@ -172,7 +167,7 @@ message *m_ptr;			/* pointer to message buffer */
   /* User processes are only allowed to send to FS and MM.  Check for this. */
   if (isuserp(caller_ptr) && !issysentn(dest)) return(E_BAD_DEST);
   dest_ptr = proc_addr(dest);	/* pointer to destination's proc entry */
-  if (dest_ptr->p_flags & P_SLOT_FREE) return(E_BAD_DEST);	/* dead dest */
+  if (isemptyp(dest_ptr)) return(E_BAD_DEST);	/* dead dest */
 
 #if ALLOW_GAP_MESSAGES
   /* This check allows a message to be anywhere in data or stack or gap. 
@@ -352,7 +347,7 @@ register struct proc *rp;	/* this process is now runnable */
 	rp->p_nextready = NIL_PROC;	/* new entry has no successor */
 	return;
   }
-  if (!isuserp(rp)) {		/* others are similar */
+  if (isservp(rp)) {		/* others are similar */
 	if (rdy_head[SERVER_Q] != NIL_PROC)
 		rdy_tail[SERVER_Q]->p_nextready = rp;
 	else
@@ -361,29 +356,13 @@ register struct proc *rp;	/* this process is now runnable */
 	rp->p_nextready = NIL_PROC;
 	return;
   }
-#if (SHADOWING == 1)
-  if (isshadowp(rp)) {		/* others are similar */
-	if (rdy_head[SHADOW_Q] != NIL_PROC)
-		rdy_tail[SHADOW_Q]->p_nextready = rp;
-	else
-		rdy_head[SHADOW_Q] = rp;
-	rdy_tail[SHADOW_Q] = rp;
-	rp->p_nextready = NIL_PROC;
-	return;
-  }
-#endif
+  /* Add user process to the front of the queue.  (Is a bit fairer to I/O
+   * bound processes.)
+   */
   if (rdy_head[USER_Q] == NIL_PROC)
 	rdy_tail[USER_Q] = rp;
   rp->p_nextready = rdy_head[USER_Q];
   rdy_head[USER_Q] = rp;
-/*
-  if (rdy_head[USER_Q] != NIL_PROC)
-	rdy_tail[USER_Q]->p_nextready = rp;
-  else
-	rdy_head[USER_Q] = rp;
-  rdy_tail[USER_Q] = rp;
-  rp->p_nextready = NIL_PROC;
-*/
 }
 
 /*===========================================================================*
@@ -411,7 +390,7 @@ register struct proc *rp;	/* this process is no longer runnable */
 	}
 	qtail = &rdy_tail[TASK_Q];
   }
-  else if (!isuserp(rp)) {
+  else if (isservp(rp)) {
 	if ( (xp = rdy_head[SERVER_Q]) == NIL_PROC) return;
 	if (xp == rp) {
 		rdy_head[SERVER_Q] = xp->p_nextready;
@@ -422,20 +401,7 @@ register struct proc *rp;	/* this process is no longer runnable */
 		return;
 	}
 	qtail = &rdy_tail[SERVER_Q];
-  } else
-#if (SHADOWING == 1)
-  if (isshadowp(rp)) {
-	if ( (xp = rdy_head[SHADOW_Q]) == NIL_PROC) return;
-	if (xp == rp) {
-		rdy_head[SHADOW_Q] = xp->p_nextready;
-		if (rp == proc_ptr)
-			pick_proc();
-		return;
-	}
-	qtail = &rdy_tail[SHADOW_Q];
-  } else
-#endif
-  {
+  } else {
 	if ( (xp = rdy_head[USER_Q]) == NIL_PROC) return;
 	if (xp == rp) {
 		rdy_head[USER_Q] = xp->p_nextready;
@@ -580,7 +546,6 @@ message *src_m;			/* source message */
 register struct proc *dst_p;	/* destination proc entry */
 message *dst_m;			/* destination buffer */
 {
-#if (SHADOWING == 0)
   /* convert virtual address to physical address */
   /* The caller has already checked if all addresses are within bounds */
   
@@ -588,18 +553,6 @@ message *dst_m;			/* destination buffer */
 				- src_p->p_map[D].mem_vir) << CLICK_SHIFT));
   dst_m = (message *)((char *)dst_m + (((phys_bytes)dst_p->p_map[D].mem_phys
 				- dst_p->p_map[D].mem_vir) << CLICK_SHIFT));
-#else
-  register phys_bytes correction;
-
-  if (correction = src_p->p_shadow) {
-	correction = (correction - src_p->p_map[D].mem_phys) << CLICK_SHIFT;
-	src_m = (message *)((char *)src_m + correction);
-  }
-  if (correction = dst_p->p_shadow) {
-	correction = (correction - dst_p->p_map[D].mem_phys) << CLICK_SHIFT;
-	dst_m = (message *)((char *)dst_m + correction);
-  }
-#endif
 #ifdef NEEDFSTRUCOPY
   phys_copy(src_m,dst_m,(phys_bytes) sizeof(message));
 #else

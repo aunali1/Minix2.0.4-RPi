@@ -4,7 +4,7 @@ cut \- select out columns of a file
 .SH SYNOPSIS
 \fBcut [ \fB \-b \fR|\fB \-c\fR] \fIlist\fR [\fIfile...\fR]\fR
 .br
-\fBcut \-f \fIlist\fR [\fB\-d \fIdelim\fR] [\fB \-s\fR]\fR
+\fBcut \-f \fIlist\fR [\fB\-d \fIdelim\fR] [\fB \-s\fR]\fR [\fIfile...\fR]" 
 .br
 .de FL
 .TP
@@ -20,18 +20,14 @@ cut \- select out columns of a file
 .FL "\-b" "Cut specified bytes"
 .FL "\-c" "Select out specific characters"
 .FL "\-d" "Change the column delimiter to \fIdelim\fR"
-.FL "\-f" "Select out specific fields that are separated by the
+.FL "\-f" "Select out specific fields that are separated by the delimiter character ( see \fIdelim\fR)"
 .FL "\-i" "Runs of delimiters count as one"
-.FL "\-s" "Suppres lines with no delimiter characters, when used
+.FL "\-s" "Suppres lines with no delimiter characters, when used with the \-f option. Lines with no delimiters are passwd through untouched"
 .SH EXAMPLES
 .EX "cut \-f 2 file" "Extract field 2"
 .EX "cut \-c 1\-2,5 file" "Extract character columns 1, 2, and 5"
 .EX "cut \-c 1\-5,7\- file" "Extract all columns except 6"
 .SH DESCRIPTION
-[\fIfile...\fR]" 
-delimiter character ( see \fIdelim\fR)"
-with the \-f option. Lines with no delimiters are passwd through
-untouched"
 .PP
 \fICut\fR extracts one or more fields or columns from a file and writes them on
 standard output.

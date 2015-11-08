@@ -18,8 +18,8 @@ _PROTOTYPE( void xt_winchester_task, (void)				);
 /* aha1540.c */
 _PROTOTYPE( void aha1540_scsi_task, (void)				);
 
-/* dosfat.c, dosfile.c */
-_PROTOTYPE( void dosfat_task, (void)					);
+/* fatfile.c, dosfile.c */
+_PROTOTYPE( void fatfile_task, (void)					);
 _PROTOTYPE( void dosfile_task, (void)					);
 _PROTOTYPE( void dosfile_stop, (void)					);
 
@@ -28,6 +28,13 @@ _PROTOTYPE( void clock_task, (void)					);
 _PROTOTYPE( void clock_stop, (void)					);
 _PROTOTYPE( clock_t get_uptime, (void)					);
 _PROTOTYPE( void syn_alrm_task, (void)					);
+#define tmr_inittimer(tp) (void)((tp)->tmr_exp_time = TMR_NEVER)
+_PROTOTYPE( void tmr_settimer, (timer_t *tp, int task, clock_t exp_time,
+							tmr_func_t fp)	);
+_PROTOTYPE( void tmr_clrtimer, (timer_t *tp)				);
+#define tmr_arg(tp) (&(tp)->tmr_arg)
+_PROTOTYPE( void tmr_exptimers, (void)					);
+_PROTOTYPE( void cancel_alarm, (int proc_nr)				);
 
 /* dmp.c */
 _PROTOTYPE( void map_dmp, (void)					);
@@ -36,8 +43,16 @@ _PROTOTYPE( void reg_dmp, (struct proc *rp)				);
 
 /* dp8390.c */
 _PROTOTYPE( void dp8390_task, (void)					);
-_PROTOTYPE( void dp_dump, (void)					);
+_PROTOTYPE( void dp8390_dump, (void)					);
 _PROTOTYPE( void dp8390_stop, (void)					);
+
+/* rtl8139.c */
+_PROTOTYPE( void rtl8139_task, (void)					);
+_PROTOTYPE( void rtl8139_dump, (void)					);
+_PROTOTYPE( void rtl8139_stop, (void)					);
+
+/* driver.c */
+_PROTOTYPE( void nop_task, (void)					);
 
 /* floppy.c, stfloppy.c */
 _PROTOTYPE( void floppy_task, (void)					);
@@ -56,6 +71,29 @@ _PROTOTYPE( void mem_task, (void)					);
 /* misc.c */
 _PROTOTYPE( int env_parse, (char *env, char *fmt, int field,
 			long *param, long min, long max)		);
+_PROTOTYPE( void env_panic, (char *env)					);
+_PROTOTYPE( int env_prefix, (char *env, char *prefix)			);
+
+#if ENABLE_PCI
+/* pci.c */
+_PROTOTYPE( void pci_init, (void)					);
+_PROTOTYPE( int pci_find_dev, (U8_t bus, U8_t dev, U8_t func,
+							int *devindp)	);
+_PROTOTYPE( int pci_first_dev, (int *devindp, u16_t *vidp, u16_t *didp)	);
+_PROTOTYPE( int pci_next_dev, (int *devindp, u16_t *vidp, u16_t *didp)	);
+_PROTOTYPE( void pci_reserve, (int devind)				);
+_PROTOTYPE( void pci_ids, (int devind, u16_t *vidp, u16_t *didp)	);
+_PROTOTYPE( char *pci_slot_name, (int devind)				);
+_PROTOTYPE( char *pci_dev_name, (U16_t vid, U16_t did)			);
+_PROTOTYPE( u8_t pci_attr_r8, (int devind, int port)			);
+_PROTOTYPE( u16_t pci_attr_r16, (int devind, int port)			);
+_PROTOTYPE( u32_t pci_attr_r32, (int devind, int port)			);
+_PROTOTYPE( void pci_attr_w16, (int devind, int port, U16_t value)	);
+_PROTOTYPE( void pci_attr_w32, (int devind, int port, u32_t value)	);
+
+/* rtl8029.c */
+_PROTOTYPE( int rtl_probe, (struct dpeth *dep)				);
+#endif /* ENABLE_PCI */
 
 /* printer.c, stprint.c */
 _PROTOTYPE( void printer_task, (void)					);
@@ -75,10 +113,10 @@ _PROTOTYPE( void unhold, (void)						);
 _PROTOTYPE( void rs_init, (struct tty *tp)				);
 
 /* sb16_dsp.c */
-_PROTOTYPE( void dsp_task, (void)					);
+_PROTOTYPE( void sb16_task, (void)					);
 
 /* sb16_mixer.c */
-_PROTOTYPE( void mixer_task, (void)					);
+_PROTOTYPE( void sb16mixer_task, (void)					);
 
 /* system.c */
 _PROTOTYPE( void cause_sig, (int proc_nr, int sig_nr)			);
@@ -88,6 +126,8 @@ _PROTOTYPE( phys_bytes numap, (int proc_nr, vir_bytes vir_addr,
 _PROTOTYPE( void sys_task, (void)					);
 _PROTOTYPE( phys_bytes umap, (struct proc *rp, int seg, vir_bytes vir_addr,
 		vir_bytes bytes)					);
+_PROTOTYPE( int vir_copy, (int src_proc, vir_bytes src_vir,
+		int dst_proc, vir_bytes dst_vir, vir_bytes bytes)	);
 
 /* table.c */
 _PROTOTYPE( void mapdrivers, (void)					);
@@ -113,9 +153,10 @@ _PROTOTYPE( void *memcpy, (void *_s1, const void *_s2, size_t _n)	);
 _PROTOTYPE( int el2_probe, (struct dpeth *dep)				);
 
 /* clock.c */
-_PROTOTYPE( void milli_start, (struct milli_state *msp)			);
-_PROTOTYPE( unsigned milli_elapsed, (struct milli_state *msp)		);
-_PROTOTYPE( void milli_delay, (unsigned millisec)			);
+_PROTOTYPE( void micro_start, (struct micro_state *msp)			);
+_PROTOTYPE( unsigned long micro_elapsed, (struct micro_state *msp)	);
+_PROTOTYPE( void micro_delay, (unsigned long usecs)			);
+#define milli_delay(n)	micro_delay((n) * 1000UL)
 
 /* console.c */
 _PROTOTYPE( void cons_stop, (void)					);
@@ -128,14 +169,14 @@ _PROTOTYPE( void select_console, (int cons_line)			);
 /* cstart.c */
 _PROTOTYPE( void cstart, (U16_t cs, U16_t ds, U16_t mds,
 				U16_t parmoff, U16_t parmsize)		);
-_PROTOTYPE( char *k_getenv, (char *name)				);
 
 /* exception.c */
 _PROTOTYPE( void exception, (unsigned vec_nr)				);
 
 /* i8259.c */
-_PROTOTYPE( irq_handler_t get_irq_handler, (int irq)			);
-_PROTOTYPE( void put_irq_handler, (int irq, irq_handler_t handler)	);
+_PROTOTYPE( void put_irq_handler, (irq_hook_t *hook, int irq,
+						irq_handler_t handler)	);
+_PROTOTYPE( void intr_handle, (irq_hook_t *hook)			);
 _PROTOTYPE( void intr_init, (int mine)					);
 
 /* keyboard.c */
@@ -147,25 +188,15 @@ _PROTOTYPE( void wreboot, (int how)					);
 _PROTOTYPE( void int86, (void)						);
 _PROTOTYPE( void cp_mess, (int src,phys_clicks src_clicks,vir_bytes src_offset,
 		phys_clicks dst_clicks, vir_bytes dst_offset)		);
-_PROTOTYPE( int in_byte, (port_t port)					);
-_PROTOTYPE( int in_word, (port_t port)					);
-_PROTOTYPE( void lock, (void)						);
-_PROTOTYPE( void unlock, (void)						);
-_PROTOTYPE( void enable_irq, (unsigned irq)				);
-_PROTOTYPE( int disable_irq, (unsigned irq)				);
-_PROTOTYPE( u16_t mem_rdw, (segm_t segm, vir_bytes offset)		);
-_PROTOTYPE( void out_byte, (port_t port, int value)			);
-_PROTOTYPE( void out_word, (port_t port, int value)			);
+_PROTOTYPE( void enable_irq, (irq_hook_t *hook)				);
+_PROTOTYPE( int disable_irq, (irq_hook_t *hook)				);
+_PROTOTYPE( u16_t mem_rdw, (U16_t segm, vir_bytes offset)		);
 _PROTOTYPE( void phys_copy, (phys_bytes source, phys_bytes dest,
 		phys_bytes count)					);
-_PROTOTYPE( void port_read, (unsigned port, phys_bytes destination,
-		unsigned bytcount)					);
-_PROTOTYPE( void port_read_byte, (unsigned port, phys_bytes destination,
-		unsigned bytcount)					);
-_PROTOTYPE( void port_write, (unsigned port, phys_bytes source,
-		unsigned bytcount)					);
-_PROTOTYPE( void port_write_byte, (unsigned port, phys_bytes source,
-		unsigned bytcount)					);
+_PROTOTYPE( void phys_insb, (Port_t port, phys_bytes buf, size_t count)	);
+_PROTOTYPE( void phys_insw, (Port_t port, phys_bytes buf, size_t count)	);
+_PROTOTYPE( void phys_outsb, (Port_t port, phys_bytes buf, size_t count));
+_PROTOTYPE( void phys_outsw, (Port_t port, phys_bytes buf, size_t count));
 _PROTOTYPE( void reset, (void)						);
 _PROTOTYPE( void vid_vid_copy, (unsigned src, unsigned dst, unsigned count));
 _PROTOTYPE( void mem_vid_copy, (u16_t *src, unsigned dst, unsigned count));
@@ -231,10 +262,11 @@ _PROTOTYPE( void pr_restart, (void)					);
 /* protect.c */
 _PROTOTYPE( void prot_init, (void)					);
 _PROTOTYPE( void init_codeseg, (struct segdesc_s *segdp, phys_bytes base,
-		phys_bytes size, int privilege)				);
+		vir_bytes size, int privilege)				);
 _PROTOTYPE( void init_dataseg, (struct segdesc_s *segdp, phys_bytes base,
-		phys_bytes size, int privilege)				);
+		vir_bytes size, int privilege)				);
 _PROTOTYPE( phys_bytes seg2phys, (U16_t seg)				);
+_PROTOTYPE( void phys2seg, (u16_t *seg, vir_bytes *off, phys_bytes phys));
 _PROTOTYPE( void enable_iop, (struct proc *pp)				);
 
 /* pty.c */
@@ -297,12 +329,6 @@ _PROTOTYPE( void kb_timer, (void)					);
 _PROTOTYPE( int kb_read, (int minor, char **bufindirect)		);
 _PROTOTYPE( void kb_init, (int minor)					);
 
-/* stshadow.c */
-_PROTOTYPE( void mkshadow, (struct proc *p, phys_clicks c2)		);
-_PROTOTYPE( void rmshadow, (struct proc *p, phys_clicks *basep,
-		phys_clicks *sizep)					);
-_PROTOTYPE( void unshadow, (struct proc *p)				);
- 
 /* stvdu.c */
 _PROTOTYPE( void flush, (struct tty *tp)				);
 _PROTOTYPE( void console, (struct tty *tp)				);
@@ -374,14 +400,12 @@ _PROTOTYPE( void _fpprestore, (struct state_frame *p)			);
 _PROTOTYPE( void _fpprestreg, (struct fpp_model *p)			);
 #endif
 
-#if (SHADOWING == 0)
 /* pmmu.c */
 _PROTOTYPE(void pmmuinit , (void)					);
 _PROTOTYPE(void pmmu_init_proc , (struct proc *rp )			);
 _PROTOTYPE(void pmmu_restore , (struct proc *rp )			);
 _PROTOTYPE(void pmmu_delete , (struct proc *rp )			);
 _PROTOTYPE(void pmmu_flush , (struct proc *rp )				);
-#endif
 
 #endif /* (CHIP == M68000) */
 

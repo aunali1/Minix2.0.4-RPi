@@ -62,18 +62,18 @@ partition table found in sector 0 to partition the floppy.  The partitions
 of
 .B fd0
 may be accessed as
-.B fd0a
+.B fd0p0
 through
-.BR fd0d .
+.BR fd0p3 .
 See
-.BR hd (4)
+.BR controller (4)
 for a description of the partition table, and associated ioctl commands.
 .SH FILES
 /dev/fd[0\-3], /dev/pc[0\-3], /dev/at[0\-3], /dev/qd[0\-3], /dev/ps[0\-3],
-/dev/pat[0\-3], /dev/qh[0\-3], /dev/PS[0\-3], /dev/fd[0\-3][a\-d]
+/dev/pat[0\-3], /dev/qh[0\-3], /dev/PS[0\-3], /dev/fd[0\-3]p[0\-3]
 .SH "SEE ALSO"
 .BR format (1),
-.BR hd (4),
+.BR controller (4),
 .BR part (8).
 .SH BUGS
 The driver does not know the size of a 360k diskette in a 360k 5.25"

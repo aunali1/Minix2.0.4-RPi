@@ -15,10 +15,10 @@ find \- find files meeting a given condition
 # \\$2
 ..
 .SH EXAMPLES
-.EX "find /  \-name a.out \-print                " "Print all \fIa.out\fR paths"
-.EX "find /usr/ast ! \-newer f \-ok rm {} \\\\\^;          " "Ask before removing"
-.EX "find /usr \-size +20 \-exec mv {} /big \\\\\^;     " "move files > 20 blks"
-.EX "find / \( \-name a.out \-o \-name \(fm*.o\(fm \) \-exec rm {}\\\\\^;" "2 conds"
+.EX "find /  \-name a.out \-print" "Print all \fIa.out\fR paths"
+.EX "find /usr/ast ! \-newer f \-ok rm {} \e;" "Ask before removing"
+.EX "find /usr \-size +20 \-exec mv {} /big \e^;" "move files > 10k"
+.EX "find / \e( \-name a.out \-o \-name \(fm*.o\(fm \e) \-exec rm {} \e;" "2 conds"
 .SH DESCRIPTION
 .PP
 \fIFind\fR descends the file tree starting at the given directory checking
@@ -31,29 +31,54 @@ Each predicate is true under the conditions specified below.  The integer
 \fI\-n\fR to mean any value less than
 \fIn\fR, or just \fIn\fR for exactly \fIn\fR.
 .PP
-.ta 0.25i 1.0i
-.nf
-	\-name s	true if current filename is \fIs\fR (include shell wild cards)
-	\-size n	true if file size is \fIn\fR blocks
-	\-inum n	true if the current file's i-node number is \fIn\fR
-	\-mtime n	true if modification time relative to today (in days) is \fIn\fR
-	\-links n	true if the number of links to the file is \fIn\fR
-	\-newer f	true if the file is newer than \fIf\fR
-	\-perm n	true if the file's permission bits = \fIn\fR (\fIn\fR is in octal)
-	\-user u	true if the uid = \fIu\fR (a numerical value, not a login name)
-	\-group g	true if the gid = \fIg\fR (a numerical value, not a group name)
-	\-type x	where \fIx\fR is \fBbcdfug\fR (block, char, dir, regular file, setuid, setgid)
-	\-xdev	do not cross devices to search mounted file systems
+.RS
+.ta +\w'\-mtime nmm'u
+.in +\w'\-mtime nmm'u
+.ti -\w'\-mtime nmm'u
+\-name s	true if current filename is \fIs\fR (include shell wild cards)
+.ti -\w'\-mtime nmm'u
+\-size n	true if file size is \fIn\fR blocks
+.ti -\w'\-mtime nmm'u
+\-inum n	true if the current file's i-node number is \fIn\fR
+.ti -\w'\-mtime nmm'u
+\-mtime n	true if modification time relative to today (in days) is \fIn\fR
+.ti -\w'\-mtime nmm'u
+\-links n	true if the number of links to the file is \fIn\fR
+.ti -\w'\-mtime nmm'u
+\-newer f	true if the file is newer than \fIf\fR
+.ti -\w'\-mtime nmm'u
+\-perm n	true if the file's permission bits = \fIn\fR (\fIn\fR is in octal)
+.ti -\w'\-mtime nmm'u
+\-user u	true if the uid = \fIu\fR (a numerical value, not a login name)
+.ti -\w'\-mtime nmm'u
+\-group g	true if the gid = \fIg\fR (a numerical value, not a group name)
+.ti -\w'\-mtime nmm'u
+\-type x	where \fIx\fR is \fBbcdfug\fR (block, char, dir, regular file, setuid, setgid)
+.ti -\w'\-mtime nmm'u
+\-xdev	do not cross devices to search mounted file systems
+.in -\w'\-mtime nmm'u
 .fi
+.RE
 .PP
 Following the expression can be one of the following, telling what to do
 when a file is found:
 .PP
-.nf
-	\-print	print the file name on standard output
-	\-exec	execute a \s-2MINIX\s0 command, {} stands for the file name
-	\-ok	prompts before executing the command
-.fi
+.RS
+.ta +\w'\-mtime nmm'u
+.in +\w'\-mtime nmm'u
+.ti -\w'\-mtime nmm'u
+\-print	print the file name on standard output
+.ti -\w'\-mtime nmm'u
+\-print0	print the file name terminated by a null character, to be
+used with
+.BR "xargs \-0" .
+(Minix extension).
+.ti -\w'\-mtime nmm'u
+\-exec	execute a command, {} stands for the file name
+.ti -\w'\-mtime nmm'u
+\-ok	prompts before executing the command
+.in -\w'\-mtime nmm'u
+.RE
 .SH "SEE ALSO"
 .BR test (1),
 .BR xargs (1).

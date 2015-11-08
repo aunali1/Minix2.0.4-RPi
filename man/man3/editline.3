@@ -3,15 +3,9 @@
 .SH NAME
 editline \- command-line editing library with history
 .SH SYNOPSIS
-.nf
-.B "char *"
-.B "readline(prompt)"
-.B "     char	*prompt;"
-
-.B "void"
-.B "add_history(line)"
-.B "    char	*line;"
-.fi
+.ft B
+char *readline(char *\fIprompt\fP)
+.ft P
 .SH DESCRIPTION
 .I Editline
 is a library that provides an line-editing interface with text recall.
@@ -32,11 +26,8 @@ Before accepting input from the user, the specified
 .I prompt
 is displayed on the terminal.
 .PP
-The
-.I add_history
-routine makes a copy of the specified
-.I line
-and adds it to the internal history list.
+Each line returned is copied to the internal history list, unless it happens
+to be equal to the previous line.
 .SS "User Interface"
 A program that uses this library provides a simple emacs-like editing
 interface to its users.
@@ -169,8 +160,10 @@ for you:
 The tab key is shown by ``[TAB]'' and the automatically-entered text
 is shown in italics.
 .SH "BUGS AND LIMITATIONS"
-Cannot handle lines more than 80 columns.
+Doesn't know how to handle multiple lines.
 .SH AUTHORS
 Simmule R. Turner <uunet.uu.net!capitol!sysgo!simmy>
 and Rich $alz <rsalz@osf.org>.
 Original manual page by DaviD W. Sanderson <dws@ssec.wisc.edu>.
+
+.\" $PchId: editline.3,v 1.3 1996/02/22 21:18:51 philip Exp $

@@ -112,38 +112,9 @@ begbss:
 .define	_p_s_call
 .define	_level0_call
 
-! Imported functions.
-
-.extern	_cstart
-.extern	_main
-.extern	_exception
-.extern	_interrupt
-.extern	_sys_call
-.extern	_unhold
-
 ! Exported variables.
-! Note: when used with a variable the .define does not reserve storage,
-! it makes the name externally visible so it may be linked to. 
-
 .define	begbss
 .define	begdata
-
-! Imported variables.
-
-.extern	_gdt
-.extern	_aout
-.extern	_code_base
-.extern	_data_base
-.extern	_held_head
-.extern	_k_reenter
-.extern	_pc_at
-.extern	_proc_ptr
-.extern	_ps_mca
-.extern	_tss
-.extern	_level0_func
-.extern _mon_sp
-.extern _mon_return
-.extern	_reboot_code
 
 .sect .text
 !*===========================================================================*
@@ -153,10 +124,11 @@ MINIX:				! this is the entry point for the MINIX kernel
 	jmp	over_flags	! skip over the next few bytes
 	.data2	CLICK_SHIFT	! for the monitor: memory granularity
 flags:
-	.data2	0x00FD		! boot monitor flags:
+	.data2	0x01FD		! boot monitor flags:
 				!	call in 386 mode, make bss, make stack,
 				!	load high, don`t patch, will return,
-				!	uses generic INT, memory vector
+				!	uses generic INT, memory vector,
+				!	new boot code return
 	nop			! extra byte to sync up disassembler
 over_flags:
 
@@ -242,7 +214,7 @@ csinit:
 !*===========================================================================*
 !*				hwint00 - 07				     *
 !*===========================================================================*
-! Note this is a macro, it looks like a subroutine.
+! Note this is a macro, it just looks like a subroutine.
 #define hwint_master(irq)	\
 	call	save			/* save interrupted process state */;\
 	inb	INT_CTLMASK						    ;\
@@ -250,13 +222,13 @@ csinit:
 	outb	INT_CTLMASK		/* disable the irq		  */;\
 	movb	al, ENABLE						    ;\
 	outb	INT_CTL			/* reenable master 8259		  */;\
+	push	(_irq_hooks+4*irq)	/* irq_hooks[irq]		  */;\
 	sti				/* enable interrupts		  */;\
-	push	irq			/* irq				  */;\
-	call	(_irq_table + 4*irq)	/* eax = (*irq_table[irq])(irq)   */;\
-	pop	ecx							    ;\
+	call	_intr_handle		/* intr_handle(irq_hooks[irq])	  */;\
 	cli				/* disable interrupts		  */;\
-	test	eax, eax		/* need to reenable irq?	  */;\
-	jz	0f							    ;\
+	pop	ecx							    ;\
+	cmp	(_irq_actids+4*irq), 0	/* interrupt still active?	  */;\
+	jnz	0f							    ;\
 	inb	INT_CTLMASK						    ;\
 	andb	al, ~[1<<irq]						    ;\
 	outb	INT_CTLMASK		/* enable the irq		  */;\
@@ -298,7 +270,7 @@ _hwint07:		! Interrupt routine for irq 7 (printer)
 !*===========================================================================*
 !*				hwint08 - 15				     *
 !*===========================================================================*
-! Note this is a macro, it looks like a subroutine.
+! Note this is a macro, it just looks like a subroutine.
 #define hwint_slave(irq)	\
 	call	save			/* save interrupted process state */;\
 	inb	INT2_CTLMASK						    ;\
@@ -306,15 +278,14 @@ _hwint07:		! Interrupt routine for irq 7 (printer)
 	outb	INT2_CTLMASK		/* disable the irq		  */;\
 	movb	al, ENABLE						    ;\
 	outb	INT_CTL			/* reenable master 8259		  */;\
-	jmp	.+2			/* delay			  */;\
+	push	(_irq_hooks+4*irq)	/* irq_hooks[irq]		  */;\
 	outb	INT2_CTL		/* reenable slave 8259		  */;\
 	sti				/* enable interrupts		  */;\
-	push	irq			/* irq				  */;\
-	call	(_irq_table + 4*irq)	/* eax = (*irq_table[irq])(irq)   */;\
-	pop	ecx							    ;\
+	call	_intr_handle		/* intr_handle(irq_hooks[irq])	  */;\
 	cli				/* disable interrupts		  */;\
-	test	eax, eax		/* need to reenable irq?	  */;\
-	jz	0f							    ;\
+	pop	ecx							    ;\
+	cmp	(_irq_actids+4*irq), 0	/* interrupt still active?	  */;\
+	jnz	0f							    ;\
 	inb	INT2_CTLMASK						    ;\
 	andb	al, ~[1<<[irq-8]]					    ;\
 	outb	INT2_CTLMASK		/* enable the irq		  */;\
@@ -565,8 +536,18 @@ _level0_call:
 !*===========================================================================*
 !*				idle_task				     *
 !*===========================================================================*
-_idle_task:			! executed when there is no work
-	jmp	_idle_task	! a "hlt" before this fails in protected mode
+_idle_task:
+! This task is called when the system has nothing else to do.  The HLT
+! instruction puts the processor in a state where it draws minimum power.
+	push	halt
+	call	_level0		! level0(halt)
+	pop	eax
+	jmp	_idle_task
+halt:
+	sti
+	hlt
+	cli
+	ret
 
 !*===========================================================================*
 !*				data					     *

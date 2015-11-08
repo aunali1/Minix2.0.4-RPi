@@ -17,10 +17,12 @@ du \- print disk usage
 .SH OPTIONS
 .FL "\-a" "Give usage for all files"
 .FL "\-l" "List up to \fIn\fR levels of subdirectories"
+.FL "\-d" "Do not cross file system boundaries"
 .FL "\-s" "Summary only"
 .SH EXAMPLES
 .EX "du dir" "List disk space used by files in dir"
 .EX "du \-s dir1 dir2" "Give summaries only"
+.EX "du \-d /" "Show only the root device"
 .SH DESCRIPTION
 .PP
 \fIDu\fR examines one or more directories and prints the amount of space 

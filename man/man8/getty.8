@@ -33,20 +33,8 @@ etc.  The default banner is
 .RS
 %s\es\esRelease\es%r\esVersion\es%v\en\en%n\eslogin:\es
 .RE
-.PP
-The only other useful functionality offered by
-.B getty
-is that it can be suspended by signal SIGUSR1 and restarted by SIGUSR2.
-This allows a program such as
-.BR modem (1)
-to temporarily claim a dialin line for dialout.
 .SH "SEE ALSO"
-.BR modem (1),
 .BR ttytab (5),
 .BR init (8).
-.SH BUGS
-.B Getty
-should be taught about modems and modem lines.  The signal trick is an awful
-hack.
 .SH AUTHOR
-Kees J. Bot (kjb@cs.vu.nl)
+Kees J. Bot <kjb@cs.vu.nl>

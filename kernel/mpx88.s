@@ -85,39 +85,10 @@
 .define	save		! save the machine state in the proc table
 .define	_s_call		! process or task wants to send or receive a message
 
-! Imported functions.
-
-.extern	_cstart
-.extern	_main
-.extern	_exception
-.extern	_interrupt
-.extern	_sys_call
-.extern	_unhold
-.extern	klib_init_prot
-.extern	real2prot
-
 ! Exported variables.
-! Note: when used with a variable the .define does not reserve storage,
-! it makes the name externally visible so it may be linked to. 
-
 .define	kernel_ds
 .define	begbss
 .define	begdata
-
-! Imported variables.
-
-.extern kernel_cs
-.extern	_gdt
-.extern	_aout
-.extern	_code_base
-.extern	_data_base
-.extern	_held_head
-.extern	_k_reenter
-.extern	_pc_at
-.extern	_proc_ptr
-.extern	_protected_mode
-.extern	_ps_mca
-.extern	_irq_table
 
 	.text
 !*===========================================================================*
@@ -127,10 +98,11 @@ MINIX:				! this is the entry point for the MINIX kernel
 	jmp	over_kernel_ds	! skip over the next few bytes
 	.data2	CLICK_SHIFT	! for the monitor: memory granularity
 kernel_ds:
-	.data2	0x00B4		! boot monitor flags:  (later kernel DS)
+	.data2	0x01B4		! boot monitor flags:  (later kernel DS)
 				!	call in 8086 mode, make bss, make stack,
 				!	load low, don`t patch, will return,
-				!	(has own INT calls), memory vector
+				!	(has own INT calls), memory vector,
+				!	new boot code return
 over_kernel_ds:
 
 ! Set up a C stack frame on the monitor stack.  (The monitor sets cs and ds
@@ -192,26 +164,31 @@ nosw:
 !*===========================================================================*
 !*				hwint00 - 07				     *
 !*===========================================================================*
-! Note this is a macro, it looks like a subroutine.
+! Note that the first few lines are a macro
 #define hwint_master(irq)	\
 	call	save			/* save interrupted process state */;\
-	inb	INT_CTLMASK						    ;\
-	orb	al, *[1<<irq]						    ;\
-	outb	INT_CTLMASK		/* disable the irq		  */;\
-	movb	al, *ENABLE						    ;\
-	outb	INT_CTL			/* reenable master 8259		  */;\
-	sti				/* enable interrupts		  */;\
-	mov	ax, *irq						    ;\
-	push	ax			/* irq				  */;\
-	call	@_irq_table + 2*irq	/* ax = (*irq_table[irq])(irq)	  */;\
-	pop	cx							    ;\
-	cli				/* disable interrupts		  */;\
-	test	ax, ax			/* need to reenable irq?	  */;\
-	jz	0f							    ;\
-	inb	INT_CTLMASK						    ;\
-	andb	al, *~[1<<irq]						    ;\
-	outb	INT_CTLMASK		/* enable the irq		  */;\
-0:	ret				/* restart (another) process      */
+	mov	si, *[2*irq]		/* load array index offset 	  */;\
+	mov	di, *[1<<irq]		/* irq mask bit			  */;\
+	jmp	hwint_master		/* continue with common code	  */
+hwint_master:
+	inb	INT_CTLMASK
+	or	ax, di			! al |= (1 << irq)
+	outb	INT_CTLMASK		! disable the irq
+	movb	al, *ENABLE
+	outb	INT_CTL			! reenable master 8259
+	mov	cx, _irq_hooks(si)	! irq_hooks[irq]
+	push	cx
+	sti				! enable interrupts
+	call	_intr_handle		! intr_handle(irq_hooks[irq])
+	cli				! disable interrupts
+	pop	cx
+	cmp	_irq_actids(si), *0	! interrupt still active?
+	jnz	0f
+	inb	INT_CTLMASK
+	not	di
+	and	ax, di			! al &= ~(1 << irq)
+	outb	INT_CTLMASK		! enable the irq
+0:	ret				! restart (another) process
 
 ! Each of these entry points is an expansion of the hwint_master macro
 
@@ -250,28 +227,32 @@ _hwint07:		! Interrupt routine for irq 7 (printer)
 !*===========================================================================*
 !*				hwint08 - 15				     *
 !*===========================================================================*
-! Note this is a macro, it looks like a subroutine.
+! Note that the first few lines are a macro
 #define hwint_slave(irq)	\
 	call	save			/* save interrupted process state */;\
-	inb	INT2_CTLMASK						    ;\
-	orb	al, *[1<<[irq-8]]					    ;\
-	outb	INT2_CTLMASK		/* disable the irq		  */;\
-	movb	al, *ENABLE						    ;\
-	outb	INT_CTL			/* reenable master 8259		  */;\
-	jmp	.+2			/* delay			  */;\
-	outb	INT2_CTL		/* reenable slave 8259		  */;\
-	sti				/* enable interrupts		  */;\
-	mov	ax, *irq						    ;\
-	push	ax			/* irq				  */;\
-	call	@_irq_table + 2*irq	/* eax = (*irq_table[irq])(irq)   */;\
-	pop	cx							    ;\
-	cli				/* disable interrupts		  */;\
-	test	ax, ax			/* need to reenable irq?	  */;\
-	jz	0f							    ;\
-	inb	INT2_CTLMASK						    ;\
-	andb	al, *~[1<<[irq-8]]					    ;\
-	outb	INT2_CTLMASK		/* enable the irq		  */;\
-0:	ret				/* restart (another) process      */
+	mov	si, *[2*irq]		/* load array index offset 	  */;\
+	mov	di, *[1<<[irq-8]]	/* irq mask bit			  */;\
+	jmp	hwint_slave		/* continue with common code	  */
+hwint_slave:
+	inb	INT2_CTLMASK
+	or	ax, di			! al |= (1 << (irq-8))
+	outb	INT2_CTLMASK		! disable the irq
+	movb	al, *ENABLE
+	outb	INT_CTL			! reenable master 8259
+	mov	cx, _irq_hooks(si)	! irq_hooks[irq]
+	outb	INT2_CTL		! reenable slave 8259
+	push	cx
+	sti				! enable interrupts
+	call	_intr_handle		! intr_handle(irq_hooks[irq])
+	cli				! disable interrupts
+	pop	cx
+	cmp	_irq_actids(si), *0	! interrupt still active?
+	jnz	0f
+	inb	INT2_CTLMASK
+	not	di
+	and	ax, di			! al &= ~(1 << (irq-8))
+	outb	INT2_CTLMASK		! enable the irq
+0:	ret				! restart (another) process
 
 ! Each of these entry points is an expansion of the hwint_slave macro
 
@@ -539,8 +520,19 @@ _level0_call:
 !*===========================================================================*
 !*				idle_task				     *
 !*===========================================================================*
-_idle_task:			! executed when there is no work
-	jmp	_idle_task	! a "hlt" before this fails in protected mode
+_idle_task:
+! This task is called when the system has nothing else to do.  The HLT
+! instruction puts the processor in a state where it draws minimum power.
+	mov	ax, #halt
+	push	ax
+	call	_level0		! level0(halt)
+	pop	ax
+	jmp	_idle_task
+halt:
+	sti
+	hlt
+	cli
+	ret
 
 
 !*===========================================================================*

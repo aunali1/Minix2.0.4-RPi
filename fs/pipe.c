@@ -16,7 +16,6 @@
 #include "fs.h"
 #include <fcntl.h>
 #include <signal.h>
-#include <minix/boot.h>
 #include <minix/callnr.h>
 #include <minix/com.h>
 #include "dev.h"
@@ -24,8 +23,6 @@
 #include "fproc.h"
 #include "inode.h"
 #include "param.h"
-
-PRIVATE message mess;
 
 /*===========================================================================*
  *				do_pipe					     *
@@ -54,7 +51,7 @@ PUBLIC int do_pipe()
   fil_ptr1->filp_count = 1;
 
   /* Make the inode on the pipe device. */
-  if ( (rip = alloc_inode(PIPE_DEV, I_REGULAR) ) == NIL_INODE) {
+  if ( (rip = alloc_inode(root_dev, I_REGULAR) ) == NIL_INODE) {
 	rfp->fp_filp[fil_des[0]] = NIL_FILP;
 	fil_ptr0->filp_count = 0;
 	rfp->fp_filp[fil_des[1]] = NIL_FILP;
@@ -97,19 +94,19 @@ int *canwrite;			/* return: number of bytes we can write */
  * pipe and no one is reading from it, give a broken pipe error.
  */
 
-  int r = 0;
-
   /* If reading, check for empty pipe. */
   if (rw_flag == READING) {
 	if (position >= rip->i_size) {
 		/* Process is reading from an empty pipe. */
+		int r = 0;
 		if (find_filp(rip, W_BIT) != NIL_FILP) {
 			/* Writer exists */
-			if (oflags & O_NONBLOCK) 
+			if (oflags & O_NONBLOCK) {
 				r = EAGAIN;
-			else 
+			} else {
 				suspend(XPIPE);	/* block reader */
-
+				r = SUSPEND;
+			}
 			/* If need be, activate sleeping writers. */
 			if (susp_count > 0) release(rip, WRITE, susp_count);
 		}
@@ -117,7 +114,6 @@ int *canwrite;			/* return: number of bytes we can write */
 	}
   } else {
 	/* Process is writing to a pipe. */
-/*	if (bytes > PIPE_SIZE) return(EFBIG); */
 	if (find_filp(rip, R_BIT) == NIL_FILP) {
 		/* Tell kernel to generate a SIGPIPE signal. */
 		sys_kill((int)(fp - fproc), SIGPIPE);
@@ -146,7 +142,7 @@ int *canwrite;			/* return: number of bytes we can write */
 			}
 		}
 		suspend(XPIPE);	/* stop writer -- pipe full */
-		return(0);
+		return(SUSPEND);
 	}
 
 	/* Writing to an empty pipe.  Search for suspended reader. */
@@ -168,6 +164,7 @@ int task;			/* who is proc waiting for? (PIPE = pipe) */
  * Store the parameters to be used upon resuming in the process table.
  * (Actually they are not used when a process is waiting for an I/O device,
  * but they are needed for pipes, and it is not worth making the distinction.)
+ * The SUSPEND pseudo error should be returned after calling suspend().
  */
 
   if (task == XPIPE || task == XPOPEN) susp_count++;/* #procs susp'ed on pipe*/
@@ -181,7 +178,6 @@ int task;			/* who is proc waiting for? (PIPE = pipe) */
 	fp->fp_buffer = buffer;		/* for reads and writes */
 	fp->fp_nbytes = nbytes;
   }
-  dont_reply = TRUE;		/* do not send caller a reply message now */
 }
 
 
@@ -268,6 +264,7 @@ PUBLIC int do_unpause()
   int proc_nr, task, fild;
   struct filp *f;
   dev_t dev;
+  message mess;
 
   if (who > MM_PROC_NR) return(EPERM);
   proc_nr = pro;
@@ -276,12 +273,9 @@ PUBLIC int do_unpause()
   if (rfp->fp_suspended == NOT_SUSPENDED) return(OK);
   task = -rfp->fp_task;
 
-  switch(task) {
+  switch (task) {
 	case XPIPE:		/* process trying to read or write a pipe */
 		break;
-
-	case XOPEN:		/* process trying to open a special file */
-		panic ("fs/do_unpause called with XOPEN\n", NO_NUM);
 
 	case XLOCK:		/* process trying to set a lock with FCNTL */
 		break;
@@ -300,8 +294,8 @@ PUBLIC int do_unpause()
 		/* Tell kernel R or W. Mode is from current call, not open. */
 		mess.COUNT = (rfp->fp_fd & BYTE) == READ ? R_BIT : W_BIT;
 		mess.m_type = CANCEL;
-		fp = rfp;	/* hack - call_ctty uses fp */
-		(*dmap[(dev >> MAJOR) & BYTE].dmap_rw)(task, &mess);
+		fp = rfp;	/* hack - ctty_io uses fp */
+		(*dmap[(dev >> MAJOR) & BYTE].dmap_io)(task, &mess);
   }
 
   rfp->fp_suspended = NOT_SUSPENDED;
